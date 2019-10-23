@@ -1,0 +1,32 @@
+version: 2.1
+jobs: 
+  lint_test_py37_conda:
+    docker:
+      - image: continuumio/miniconda3
+    steps:
+    - checkout
+    - run:
+        name: Install requirements
+        command: | 
+          conda install pip
+          pip install -r requirements.txt
+          pip install black
+    - run:
+        name: Install Surfclass Package
+        command: | 
+          pip install .
+    - run:
+        name: Run unit tests
+        command: |
+          pytest ./tests
+    - run:
+        name: Lint with black
+        command: black --check --diff .
+       
+workflows:
+  lint_and_test:
+    jobs:
+    - lint_test_py37_conda:
+        filters:
+          branches:
+            only: master
