@@ -10,6 +10,7 @@ jobs:
         command: | 
           conda install pip
           pip install -r requirements.txt
+          pip install black
     - run:
         name: Install Surfclass Package
         command: | 
@@ -18,6 +19,9 @@ jobs:
         name: Run unit tests
         command: |
           pytest ./tests
+    - run:
+        name: Lint with black
+        command: black --check --diff .
        
 workflows:
   lint_and_test:
