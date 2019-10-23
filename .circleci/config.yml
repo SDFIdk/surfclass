@@ -6,9 +6,10 @@ jobs:
     steps:
     - checkout
     - run:
-        name: Create and activate conda environment
-        command: |
-          conda env create -f environment.yml
+        name: Install requirements
+        command: | 
+          conda install -U pip
+          pip install -r requirements.txt
     - run:
         name: Install Surfclass Package
         command: | 
