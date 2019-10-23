@@ -5,17 +5,20 @@ jobs:
       - image: continuumio/miniconda3
     steps:
     - checkout
-#    - run:
-#        name: Create and activate conda environment
-#        command: |
-#          conda env create -f environment.yml
-#          activate surfclass
+    - run:
+        name: Create and activate conda environment
+        command: |
+          conda env create -f environment.yml
     - run:
         name: Install Surfclass Package
-        command: pip install .
+        command: | 
+          activate surfclass
+          pip install .
     - run:
         name: Run unit tests
-        command: pytest ./tests
+        command: |
+          activate surfclass
+          pytest ./tests
        
 workflows:
   lint_and_test:
