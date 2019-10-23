@@ -15,7 +15,7 @@ jobs:
         command: pip install .
     - run:
         name: Run unit tests
-        command: pytest
+        command: pytest ./tests
        
 workflows:
   lint_and_test:
