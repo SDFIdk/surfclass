@@ -4,7 +4,7 @@ import re
 
 from setuptools import find_packages, setup
 
-###############################################################################
+##############################################################################
 NAME = "surfclass"
 PACKAGES = find_packages(where='src')
 PACKAGE_DIR={"":"src"}
