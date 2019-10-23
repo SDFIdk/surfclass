@@ -1,4 +1,4 @@
-version: 2 # use CircleCI 2.0
+version: 2.1
 jobs: 
   lint_test_py37_conda:
     docker:
