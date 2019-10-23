@@ -1,0 +1,7 @@
+.vscode/
+.pytest_cache
+*.pyc
+src/*.egg-info
+src/surfclass/*.egg-info
+src/surfclass/__pycache__
+tests/__pycache__
