@@ -29,5 +29,4 @@ workflows:
     - lint_test_py37_conda:
         filters:
           branches:
-            only:
-            - circleci-setup
+            only: master
