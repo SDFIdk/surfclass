@@ -13,12 +13,10 @@ jobs:
     - run:
         name: Install Surfclass Package
         command: | 
-          activate surfclass
           pip install .
     - run:
         name: Run unit tests
         command: |
-          activate surfclass
           pytest ./tests
        
 workflows:
