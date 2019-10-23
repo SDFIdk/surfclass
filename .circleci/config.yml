@@ -9,7 +9,7 @@ jobs:
         name: Create and activate conda environment
         command: |
           conda env create -f environment.yml
-          conda activate surfclass
+          activate surfclass
     - run:
         name: Install Surfclass Package
         command: pip install .
