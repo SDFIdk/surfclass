@@ -1,0 +1,27 @@
+version: 2 # use CircleCI 2.0
+jobs: 
+  lint_test_py37_conda:
+    docker:
+      - image: continuumio/miniconda3
+    steps:
+    - checkout
+    - run:
+        name: Create and activate conda environment
+        command: |
+          conda env create -f environment.yml
+          conda activate surfclass
+    - run:
+        name: Install Surfclass Package
+        command: pip install .
+    - run:
+        name: Run unit tests
+        command: pytest
+       
+workflows:
+  lint_and_test:
+    jobs:
+    - lint_test_py37_conda:
+        filters:
+          branches:
+            only:
+            - circleci-setup
