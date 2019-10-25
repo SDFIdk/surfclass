@@ -26,4 +26,4 @@ jobs:
 workflows:
   lint_and_test:
     jobs:
-    - lint_test_py37_conda: # Always run this, also in branches
+      - lint_test_py37_conda # Always run this, also in branches
