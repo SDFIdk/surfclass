@@ -12,10 +12,12 @@ def print_stderr(*args, **kwargs):
     """
     print(*args, file=sys.stderr, **kwargs)
 
-@click.group('surfclass')
+
+@click.group("surfclass")
 @click.version_option(version="0.0.1")
 def cli():
     pass
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     cli()

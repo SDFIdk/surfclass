@@ -6,10 +6,10 @@ from setuptools import find_packages, setup
 
 ##############################################################################
 NAME = "surfclass"
-PACKAGES = find_packages(where='src')
-PACKAGE_DIR={"":"src"}
+PACKAGES = find_packages(where="src")
+PACKAGE_DIR = {"": "src"}
 META_PATH = os.path.join("src", "surfclass", "__init__.py")
-KEYWORDS = ["surface","classification","fortification"]
+KEYWORDS = ["surface", "classification", "fortification"]
 PROJECT_URLS = {
     "Bug Tracker": "https://github.com/septima/surfclass/issues",
     "Source Code": "https://github.com/septima/surfclass",
@@ -26,17 +26,13 @@ CLASSIFIERS = [
     "Programming Language :: Python :: 3.7",
     "Topic :: Scientific/Engineering :: GIS",
 ]
-INSTALL_REQUIRES = [
-            'click',
-]
+INSTALL_REQUIRES = ["click"]
 
-EXTRAS_REQUIRE = {
-          'tests': ['pytest', 'pytest-clarity']
-}
+EXTRAS_REQUIRE = {"tests": ["pytest", "pytest-clarity"]}
 ENTRY_POINTS = """
       [console_scripts]
       surfclass=surfclass.scripts.cli:cli
-""" 
+"""
 
 ###############################################################################
 
@@ -66,23 +62,24 @@ def find_meta(meta):
         return meta_match.group(1)
     raise RuntimeError("Unable to find __{meta}__ string.".format(meta=meta))
 
+
 if __name__ == "__main__":
     setup(
-      name=NAME,
-      version=find_meta("version"),
-      description=find_meta("description"),
-      long_description="",
-      classifiers=CLASSIFIERS,
-      keywords=KEYWORDS,
-      author=find_meta("author"),
-      author_email=find_meta("email"),
-      url=find_meta("uri"),
-      license=find_meta("license"),
-      packages=PACKAGES,
-      package_dir=PACKAGE_DIR,
-      include_package_data=True,
-      zip_safe=False,
-      install_requires=INSTALL_REQUIRES,
-      extras_require=EXTRAS_REQUIRE,
-      entry_points=ENTRY_POINTS
-      )
+        name=NAME,
+        version=find_meta("version"),
+        description=find_meta("description"),
+        long_description="",
+        classifiers=CLASSIFIERS,
+        keywords=KEYWORDS,
+        author=find_meta("author"),
+        author_email=find_meta("email"),
+        url=find_meta("uri"),
+        license=find_meta("license"),
+        packages=PACKAGES,
+        package_dir=PACKAGE_DIR,
+        include_package_data=True,
+        zip_safe=False,
+        install_requires=INSTALL_REQUIRES,
+        extras_require=EXTRAS_REQUIRE,
+        entry_points=ENTRY_POINTS,
+    )
