@@ -4,7 +4,8 @@ class Rasterizer:
 
 
 def main():
-    r = Rasterizer()
+    r = Rasterizer("arg1")
+    print(r)
 
 
 if __name__ == "__main__":
