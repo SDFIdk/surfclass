@@ -1,5 +1,8 @@
 name: surfclass
+channels:
+  - conda-forge
 dependencies:
   - python=3.7
-  - gdal
+  - gdal=3.*
+  - pdal=2.*
   - pip
