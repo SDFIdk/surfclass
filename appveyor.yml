@@ -30,7 +30,7 @@ install:
 - "conda create -q -n test-environment python=%PYTHON_VERSION% pip gdal"
 - activate test-environment
 # - pip install -r requirements.txt
-- pip install .
+- pip install ".[dev]"
 
 
 test_script:

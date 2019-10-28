@@ -10,11 +10,11 @@ jobs:
         command: | 
           conda install pip gdal
           # pip install -r requirements.txt
-          pip install black
+          # pip install black
     - run:
         name: Install Surfclass Package
         command: | 
-          pip install .
+          pip install .[dev]
     - run:
         name: Run unit tests
         command: |
