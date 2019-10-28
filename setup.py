@@ -26,9 +26,9 @@ CLASSIFIERS = [
     "Programming Language :: Python :: 3.7",
     "Topic :: Scientific/Engineering :: GIS",
 ]
-INSTALL_REQUIRES = ["click"]
+INSTALL_REQUIRES = ["click", "gdal>=2.3"]
 
-EXTRAS_REQUIRE = {"tests": ["pytest", "pytest-clarity"]}
+EXTRAS_REQUIRE = {"dev": ["pytest", "black"]}
 ENTRY_POINTS = """
       [console_scripts]
       surfclass=surfclass.scripts.cli:cli
