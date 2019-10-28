@@ -1,0 +1,37 @@
+# Only build master and PRs against master
+branches:
+  only:
+  - master
+ 
+environment:
+  matrix:
+  - CONDA_PATH: "C:\\Miniconda37-x64"
+    PYTHON_VERSION: 3.7
+    ARCH: "64"
+
+# No Visual Studio builds here
+build: off
+
+platform:
+- x64
+
+cache:
+  - '%LOCALAPPDATA%\pip\Cache'
+  - '%LOCALAPPDATA%\conda\conda\pkgs'
+
+init:
+  - ECHO "%CONDA_PATH%"
+
+install:
+- '"%CONDA_PATH%\\Scripts\\activate.bat"'
+- conda config --set always_yes yes --set changeps1 no
+- conda update -q conda
+- conda info -a
+- "conda create -q -n test-environment python=%PYTHON_VERSION% pip gdal"
+- activate test-environment
+- pip install -r requirements.txt
+- pip install .
+
+
+test_script:
+- pytest ./tests

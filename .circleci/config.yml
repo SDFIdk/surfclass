@@ -8,7 +8,7 @@ jobs:
     - run:
         name: Install requirements
         command: | 
-          conda install pip
+          conda install pip gdal
           pip install -r requirements.txt
           pip install black
     - run:

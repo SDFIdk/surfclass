@@ -10,3 +10,10 @@ def test_cli():
     result = runner.invoke(cli, ["--version"])
 
     assert result.exit_code == 0
+
+
+def test_gdal():
+    from osgeo import gdal
+
+    assert gdal.VersionInfo() == ""
+
