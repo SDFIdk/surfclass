@@ -26,7 +26,7 @@ CLASSIFIERS = [
     "Programming Language :: Python :: 3.7",
     "Topic :: Scientific/Engineering :: GIS",
 ]
-INSTALL_REQUIRES = ["click"]
+INSTALL_REQUIRES = ["click", "gdal"]
 
 EXTRAS_REQUIRE = {"tests": ["pytest", "pytest-clarity"]}
 ENTRY_POINTS = """
