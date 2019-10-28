@@ -18,12 +18,6 @@ jobs:
           conda activate surfclass_dev
           pip install .[dev]
     - run:
-        name: Run unit tests
-        command: |
-          source /opt/conda/etc/profile.d/conda.sh
-          conda activate surfclass_dev
-          pytest ./tests
-    - run:
         name: Lint with black
         command: |
           source /opt/conda/etc/profile.d/conda.sh
@@ -36,6 +30,20 @@ jobs:
           conda activate surfclass_dev        
           pylint --rcfile=setup.cfg src
        
+    - run:
+        name: Run unit tests
+        command: |
+          source /opt/conda/etc/profile.d/conda.sh
+          conda activate surfclass_dev
+          pytest ./tests
+          mkdir test-reports
+          pytest --junitxml=test-reports/junit.xml ./tests
+
+    - store_test_results:
+          path: test-reports
+    - store_artifacts:
+        path: test-reports    
+
 workflows:
   lint_and_test:
     jobs:
