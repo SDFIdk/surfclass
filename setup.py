@@ -28,7 +28,7 @@ CLASSIFIERS = [
 ]
 INSTALL_REQUIRES = ["click", "gdal>=3"]  # , "pdal>=2"]
 
-EXTRAS_REQUIRE = {"dev": ["pytest", "black"]}
+EXTRAS_REQUIRE = {"dev": ["pytest"]}  # , "black"]}
 ENTRY_POINTS = """
       [console_scripts]
       surfclass=surfclass.scripts.cli:cli
