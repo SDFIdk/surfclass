@@ -27,8 +27,8 @@ install:
 - conda config --set always_yes yes --set changeps1 no
 - conda update -q conda
 - conda info -a
-- "conda env create -f environment.yml"
-- activate surfclass
+- "conda env create -f environment-dev.yml"
+- activate surfclass_dev
 # - pip install -r requirements.txt
 - pip install ".[dev]"
 
