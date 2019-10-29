@@ -8,26 +8,26 @@ jobs:
     - run:
         name: Install requirements
         command: | 
-          conda env create -f environment.yml
+          conda env create -f environment-dev.yml
           # pip install -r requirements.txt
           # pip install black
     - run:
         name: Install Surfclass Package
         command: | 
           source /opt/conda/etc/profile.d/conda.sh
-          conda activate surfclass
+          conda activate surfclass_dev
           pip install .[dev]
     - run:
         name: Run unit tests
         command: |
           source /opt/conda/etc/profile.d/conda.sh
-          conda activate surfclass
+          conda activate surfclass_dev
           pytest ./tests
     - run:
         name: Lint with black
         command: |
           source /opt/conda/etc/profile.d/conda.sh
-          conda activate surfclass
+          conda activate surfclass_dev
           black --check --diff .
        
 workflows:

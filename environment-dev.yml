@@ -1,0 +1,11 @@
+name: surfclass_dev
+channels:
+  - conda-forge
+dependencies:
+  - python=3.7
+  - gdal=3.*
+  - python-pdal=2.*
+  - black
+  - pytest
+  - pytest-clarity
+  - pip
