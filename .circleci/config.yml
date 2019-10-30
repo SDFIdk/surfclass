@@ -29,7 +29,7 @@ jobs:
           source /opt/conda/etc/profile.d/conda.sh
           conda activate surfclass_dev
           black --check --diff .
-    -run:
+    - run:
         name: Lint with pylint
         command: |
           source /opt/conda/etc/profile.d/conda.sh
