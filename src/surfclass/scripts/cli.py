@@ -1,5 +1,5 @@
-import click
 import sys
+import click
 
 
 def print_stderr(*args, **kwargs):
