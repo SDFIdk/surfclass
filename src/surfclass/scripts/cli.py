@@ -1,5 +1,6 @@
 import sys
 import click
+from surfclass import __version__
 
 
 def print_stderr(*args, **kwargs):
@@ -14,7 +15,7 @@ def print_stderr(*args, **kwargs):
 
 
 @click.group("surfclass")
-@click.version_option(version="0.0.1")
+@click.version_option(version=__version__)
 def cli():
     pass
 
