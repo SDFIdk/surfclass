@@ -16,5 +16,3 @@ conda env create -n surfclass -f environment.yml
 conda activate surfclass
 pip install .
 ```
-
-Nicolai Master test
