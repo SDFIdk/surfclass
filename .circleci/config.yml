@@ -29,6 +29,12 @@ jobs:
           source /opt/conda/etc/profile.d/conda.sh
           conda activate surfclass_dev
           black --check --diff .
+    -run:
+        name: Lint with pylint
+        command: |
+          source /opt/conda/etc/profile.d/conda.sh
+          conda activate surfclass_dev        
+          pylint --rcfile=setup.cfg src
        
 workflows:
   lint_and_test:
