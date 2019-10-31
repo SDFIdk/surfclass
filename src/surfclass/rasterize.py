@@ -29,7 +29,7 @@ class LidarRasterizer:
 
         rangefilter = {
             "type": "filters.range",
-            "limits": "Classification[1:9]",  # Ground classification
+            "limits": "Classification[2:9]",  # Ground classification
         }
 
         smrf_filter = {
@@ -41,7 +41,7 @@ class LidarRasterizer:
             "scalar": 1.2,
         }
         # Build the pipeline by concating the reader, filter and writers
-        pipeline_dict = {"pipeline": [self.reader, rangefilter, smrf_filter] + writers}
+        pipeline_dict = {"pipeline": [self.reader, rangefilter] + writers}
 
         # Convert the pipeline to stringified JSON (required by PDAL)
         pipeline = pdal.Pipeline(json.dumps(pipeline_dict))
@@ -96,7 +96,7 @@ class LidarRasterizer:
 
 def test():
     """ Only used for internal testing """
-    resolution = 0.4  # Coarse resolution for fast testing
+    resolution = 2  # Coarse resolution for fast testing
     bbox = [666000, 6666000, 667000, 6667000]
     lidar = os.path.join("testdata", "1km_6136_591.laz")
     dimensions = ["Z", "Intensity", "Amplitude", "Pulse width"]
