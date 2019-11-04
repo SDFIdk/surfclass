@@ -20,7 +20,6 @@ class LidarRasterizer:
         )  # Is this the correct way to get logs inside instance of class ?
 
     def start(self):
-
         # Collect a writer for each dimension
         writers = [
             self._create_pipeline_writer(dim, self.resolution, self.bbox)
