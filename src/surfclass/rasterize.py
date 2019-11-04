@@ -70,15 +70,13 @@ class LidarRasterizer:
         """Validates the dimensions given, against PDAL"""
         try:
             for dim in dimensions:
-                if (
+                if not (
                     any(
                         pdaldim["name"] == dim
                         for pdaldim in pdal.dimension.getDimensions()
                     )
                     or dim == "Pulse width"
                 ):
-                    continue
-                else:
                     raise ValueError(dim, "Dimension not recognized by PDAL")
             return dimensions
         except ValueError as e:
