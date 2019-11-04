@@ -5,6 +5,7 @@ import pprint
 import pdal
 
 pp = pprint.PrettyPrinter(indent=4)
+logger = logging.getLogger(__name__)
 
 
 class LidarRasterizer:
@@ -15,9 +16,6 @@ class LidarRasterizer:
         self.dimensions = self._validate_dimensions(dimensions)
         self.reader = self._create_pipeline_reader(lidar)
         self.filterexp = filterexp
-        self.logger = logging.getLogger(
-            __name__
-        )  # Is this the correct way to get logs inside instance of class ?
 
     def start(self):
         # Collect a writer for each dimension
