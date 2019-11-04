@@ -29,7 +29,7 @@ class LidarRasterizer:
 
         rangefilter = {
             "type": "filters.range",
-            "limits": "Z[0:100],Classification[2:9]",  # Ground classification
+            "limits": "Classification[2:2]",  # Ground classification
         }
 
         # Build the pipeline by concating the reader, filter and writers
@@ -56,7 +56,7 @@ class LidarRasterizer:
         bbox = str((bbox[0:2], bbox[2:4]))
         writer = {
             "type": "writers.gdal",
-            "filename": "1km_6136_591_" + dimension.replace(" ", "") + ".tif",
+            "filename": "1km_6184_720_terrain_" + dimension.replace(" ", "") + ".tif",
             "resolution": resolution,
             "dimension": dimension,
             # "bounds": bbox,
@@ -90,8 +90,8 @@ def test():
     """ Only used for internal testing """
     resolution = 0.5  # Coarse resolution for fast testing
     bbox = [666000, 6666000, 667000, 6667000]
-    lidar = os.path.join("testdata", "1km_6136_591.laz")
-    dimensions = ["Z", "Intensity", "Amplitude", "Pulse width"]
+    lidar = os.path.join("testdata", "1km_6184_720.las")
+    dimensions = ["Intensity", "Amplitude", "Pulse width"]
     r = LidarRasterizer(resolution, bbox, lidar, dimensions, "")
 
     r.start()
