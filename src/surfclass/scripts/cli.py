@@ -1,23 +1,24 @@
-import sys
+import logging
 import click
+from click_plugins import with_plugins
+from pkg_resources import iter_entry_points
+from surfclass import __version__
+from surfclass.scripts import options
+from surfclass.scripts.helpers import ClickColoredLoggingFormatter, ClickLoggingHandler
+
+logger = logging.getLogger(__name__)
 
 
-def print_stderr(*args, **kwargs):
-    """
-    Prints messages to stderr
-    The function eprint can be used in the same was as the standard print function
-    :param args:
-    :param kwargs:
-    :return:
-    """
-    print(*args, file=sys.stderr, **kwargs)
+def configure_logging(log_level):
+    handler = ClickLoggingHandler()
+    handler.formatter = ClickColoredLoggingFormatter("%(name)s: %(message)s")
+    logging.basicConfig(level=log_level.upper(), handlers=[handler])
 
 
+@with_plugins(iter_entry_points("surfclass.surfclass_commands"))
 @click.group("surfclass")
-@click.version_option(version="0.0.1")
-def cli():
-    pass
-
-
-if __name__ == "__main__":
-    cli()
+@click.version_option(version=__version__)
+@options.verbosity_arg
+def cli(verbosity):
+    """surfclass command line interface"""
+    configure_logging(verbosity)
