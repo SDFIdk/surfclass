@@ -23,5 +23,4 @@ def test_gridsampler(las_filepath):
     assert grid.shape == (100, 100)
     assert np.max(grid) == 60.99
     assert np.min(grid) == 38.097
-    assert np.mean(grid) == 0
 

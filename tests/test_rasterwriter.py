@@ -13,7 +13,14 @@ def test_writer(tmp_path):
     rasterwriter.write_to_file(outfile, data, origin, resolution, epsg)
     assert os.path.exists(outfile)
     ds = gdal.Open(outfile)
-    assert ds.GetGeoTransform() == (origin[0], resolution, 0, origin[1], 0, resolution)
+    assert ds.GetGeoTransform() == (
+        origin[0],
+        resolution,
+        0,
+        origin[1],
+        0,
+        -1 * resolution,
+    )
     assert ds.RasterXSize == data.shape[1]
     assert ds.RasterYSize == data.shape[0]
     band = ds.GetRasterBand(1)
