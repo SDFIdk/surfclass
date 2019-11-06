@@ -1,5 +1,5 @@
-from surfclass import lidar
 import numpy as np
+from surfclass import lidar
 
 
 def test_open_pipeline(las_filepath):
@@ -23,4 +23,3 @@ def test_gridsampler(las_filepath):
     assert grid.shape == (100, 100)
     assert np.max(grid) == 60.99
     assert np.min(grid) == 38.097
-
