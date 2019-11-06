@@ -1,3 +1,4 @@
+# pylint: disable=redefined-outer-name
 import os
 import pytest
 from click.testing import CliRunner
