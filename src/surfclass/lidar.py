@@ -38,7 +38,7 @@ class GridSampler:
         """Removes points falling outside the given bbox"""
         xmin, ymin, xmax, ymax = self.bbox
         maskx = np.logical_and(self.points["X"] >= xmin, self.points[:]["X"] < xmax)
-        masky = np.logical_and(self.points["Y"] >= ymin, self.points[:]["Y"] < ymax)
+        masky = np.logical_and(self.points["Y"] > ymin, self.points[:]["Y"] <= ymax)
         mask = np.logical_and(maskx, masky)
         self.points = self.points[mask]
         self.cell_indexes = self._cell_indexes()
