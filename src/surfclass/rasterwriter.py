@@ -12,7 +12,7 @@ def write_to_file(filename, array, origin, resolution, epsg_code, nodata=None):
     gdal_type = dtype_to_gdaltype(dtype)
     gdal_options = gdaltype_to_creationoptions(gdal_type)
     ds = driver.Create(filename, cols, rows, 1, gdal_type, options=gdal_options)
-    ds.SetGeoTransform((originX, resolution, 0, originY, 0, resolution))
+    ds.SetGeoTransform((originX, resolution, 0, originY, 0, -1 * resolution))
     band = ds.GetRasterBand(1)
     # TODO: Handle masked arrays
     if not nodata is None:
