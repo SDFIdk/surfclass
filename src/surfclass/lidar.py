@@ -65,7 +65,7 @@ class GridSampler:
             raise TypeError("dimension must be a string")
 
         if not dimension in self.points.dtype.fields:
-            valid_fields = [x for x in self.points.dtype.fields]
+            valid_fields = self.points.dtype.fields
             raise ValueError(
                 f"dimension '{dimension}' not found in data ({valid_fields})"
             )

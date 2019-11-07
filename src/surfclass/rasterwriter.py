@@ -1,16 +1,16 @@
 from osgeo import gdal, osr
 
-gdal_int_options = options = ["TILED=YES", "COMPRESS=lzw", "PREDICTOR=2"]
-gdal_float_options = options = ["TILED=YES", "COMPRESS=lzw", "PREDICTOR=3"]
+gdal_int_options = options = ["TILED=YES", "COMPRESS=deflate", "PREDICTOR=2"]
+gdal_float_options = options = ["TILED=YES", "COMPRESS=deflate", "PREDICTOR=3"]
 
 
 def write_to_file(filename, array, origin, resolution, epsg_code, nodata=None):
     cols, rows = array.shape[1], array.shape[0]
     originX, originY = origin
     dtype = array.dtype
-    driver = gdal.GetDriverByName("GTiff")
     gdal_type = dtype_to_gdaltype(dtype)
     gdal_options = gdaltype_to_creationoptions(gdal_type)
+    driver = gdal.GetDriverByName("GTiff")
     ds = driver.Create(filename, cols, rows, 1, gdal_type, options=gdal_options)
     ds.SetGeoTransform((originX, resolution, 0, originY, 0, -1 * resolution))
     band = ds.GetRasterBand(1)
