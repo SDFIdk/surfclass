@@ -1,6 +1,6 @@
-import os
 import json
 import logging
+from pathlib import Path
 import pdal
 from surfclass import lidar, rasterwriter, Bbox
 
@@ -19,10 +19,23 @@ dimension_nodata = {
 
 
 class LidarRasterizer:
-    def __init__(self, resolution, bbox, lidarfile, dimensions, filterexp):
+    def __init__(
+        self,
+        lidarfile,
+        outdir,
+        resolution,
+        bbox,
+        dimensions,
+        prefix=None,
+        postfix=None,
+        filterexp=None,
+    ):
+        self.lidar = lidarfile
+        self.outdir = outdir or ""
+        self.fileprefix = prefix or ""
+        self.filepostfix = postfix or ""
         self.resolution = resolution
         self.bbox = Bbox(*bbox)
-        self.lidar = lidarfile
         self.dimensions = self._validate_dimensions(dimensions)
         self.reader = self._create_pipeline_reader(lidarfile)
         self.filterexp = filterexp
@@ -81,9 +94,10 @@ class LidarRasterizer:
     def _create_pipeline_reader(cls, lidarfile):
         return {"type": "readers.las", "filename": lidarfile}
 
-    @classmethod
-    def _output_filename(cls, dimension):
-        return "1km_6184_720_terrain_" + dimension.replace(" ", "") + ".tif"
+    def _output_filename(self, dimension):
+        dimname = dimension.replace(" ", "")
+        name = f"{self.fileprefix}{dimname}{self.filepostfix}.tif"
+        return Path("{self.outdir}") / name
 
     @classmethod
     def _validate_dimensions(cls, dimensions):
@@ -107,12 +121,22 @@ def test():
     """ Only used for internal testing """
     resolution = 0.5  # Coarse resolution for fast testing
     bbox = Bbox(727000, 6171000, 728000, 6172000)
-    lidarfile = os.path.join(
-        "/Volumes/GoogleDrive/My Drive/Septima - Ikke synkroniseret/Projekter/SDFE/Befæstelse/data/trænings_las",
-        "1km_6171_727.las",
+    lidarfile = (
+        Path(
+            "/Volumes/GoogleDrive/My Drive/Septima - Ikke synkroniseret/Projekter/SDFE/Befæstelse/data/trænings_las"
+        )
+        / "1km_6171_727.las"
     )
-    dimensions = ["Intensity", "Amplitude", "Pulse width"]
-    r = LidarRasterizer(resolution, bbox, lidarfile, dimensions, "")
+    outdir = ""
+    prefix = "1km_6171_727_"
+    dimensions = [
+        "Intensity",
+        "Amplitude",
+        "Pulse width",
+        "ReturnNumber",
+        "ScanAngleRank",
+    ]
+    r = LidarRasterizer(lidarfile, outdir, resolution, bbox, dimensions, prefix=prefix)
 
     r.start()
 

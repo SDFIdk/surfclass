@@ -1,5 +1,5 @@
 # pylint: disable=redefined-outer-name
-import os
+from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
@@ -12,9 +12,9 @@ def cli_runner():
 @pytest.fixture(scope="session")
 def data_dir():
     """Absolute file path to the dir with test data."""
-    return os.path.abspath(os.path.join("tests", "data"))
+    return Path("./tests/data").absolute().resolve()
 
 
 @pytest.fixture(scope="session")
 def las_filepath(data_dir):
-    return os.path.join(data_dir, "1km_6171_727_decimated.las")
+    return Path(data_dir) / "1km_6171_727_decimated.las"
