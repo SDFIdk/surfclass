@@ -1,6 +1,6 @@
 import json
 import logging
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import pdal
 from surfclass import lidar, rasterwriter, Bbox
 
@@ -93,7 +93,9 @@ class LidarRasterizer:
 
     @classmethod
     def _create_pipeline_reader(cls, lidarfile):
-        return {"type": "readers.las", "filename": lidarfile}
+        # pdal does not accetp backslashes in paths (windows style)
+        # oddly enough this can be solved by using PureWindowsPath
+        return {"type": "readers.las", "filename": str(PureWindowsPath(lidarfile))}
 
     def _output_filename(self, dimension):
         dimname = dimension.replace(" ", "")
