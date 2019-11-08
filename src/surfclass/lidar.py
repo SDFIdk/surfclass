@@ -1,4 +1,5 @@
 import logging
+import json
 import pdal
 from pdal.pipeline import Pipeline
 import numpy as np
@@ -7,7 +8,8 @@ logger = logging.getLogger(__name__)
 
 
 def open_pdal_pipeline(lidar_file):
-    pipeline_str = '{"pipeline": ["%s"]}' % lidar_file
+    pipeline_obj = {"pipeline": [str(lidar_file)]}
+    pipeline_str = json.dumps(pipeline_obj)
     pipeline = pdal.Pipeline(pipeline_str)
     pipeline.validate()  # check if our JSON and options were good
     pipeline.loglevel = 8
