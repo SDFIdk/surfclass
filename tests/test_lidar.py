@@ -21,5 +21,5 @@ def test_gridsampler(las_filepath):
 
     grid = sampler.make_grid("Z", nodata=-999, masked=True)
     assert grid.shape == (100, 100)
-    assert np.max(grid) == 60.99
-    assert np.min(grid) == 38.097
+    assert np.max(grid) == 60.963
+    assert np.min(grid) == 2.809
