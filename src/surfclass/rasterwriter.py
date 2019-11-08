@@ -1,7 +1,7 @@
 from osgeo import gdal, osr
 
-gdal_int_options = options = ["TILED=YES", "COMPRESS=deflate", "PREDICTOR=2"]
-gdal_float_options = options = ["TILED=YES", "COMPRESS=deflate", "PREDICTOR=3"]
+gdal_int_options = ["TILED=YES", "COMPRESS=deflate", "PREDICTOR=2"]
+gdal_float_options = ["TILED=YES", "COMPRESS=deflate", "PREDICTOR=3"]
 
 
 def write_to_file(filename, array, origin, resolution, epsg_code, nodata=None):
@@ -39,12 +39,17 @@ map_dtype_gdal = {
 
 
 def gdaltype_to_creationoptions(gdaltype):
-    t = str(gdaltype).lower()
-    if "int" in t:
+    if gdaltype in [
+        gdal.GDT_Byte,
+        gdal.GDT_Int16,
+        gdal.GDT_Int32,
+        gdal.GDT_UInt16,
+        gdal.GDT_UInt32,
+    ]:
         return gdal_int_options
-    if "float" in t:
+    if gdaltype in [gdal.GDT_Float32, gdal.GDT_Float64]:
         return gdal_float_options
-    return []
+    raise NotImplementedError()
 
 
 def dtype_to_gdaltype(dtype):
