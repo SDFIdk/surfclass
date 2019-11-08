@@ -15,6 +15,7 @@ dimension_nodata = {
     "ScanAngleRank": -999,
     "Pulse width": -999,
     "Amplitude": -999,
+    "PointSourceId": 0,
 }
 
 
@@ -97,7 +98,7 @@ class LidarRasterizer:
     def _output_filename(self, dimension):
         dimname = dimension.replace(" ", "")
         name = f"{self.fileprefix}{dimname}{self.filepostfix}.tif"
-        return Path("{self.outdir}") / name
+        return str(Path(self.outdir) / name)
 
     @classmethod
     def _validate_dimensions(cls, dimensions):
@@ -120,25 +121,37 @@ class LidarRasterizer:
 def test():
     """ Only used for internal testing """
     resolution = 0.5  # Coarse resolution for fast testing
-    bbox = Bbox(727000, 6171000, 728000, 6172000)
-    lidarfile = (
-        Path(
-            "/Volumes/GoogleDrive/My Drive/Septima - Ikke synkroniseret/Projekter/SDFE/Befæstelse/data/trænings_las"
-        )
-        / "1km_6171_727.las"
-    )
-    outdir = ""
-    prefix = "1km_6171_727_"
-    dimensions = [
-        "Intensity",
-        "Amplitude",
-        "Pulse width",
-        "ReturnNumber",
-        "ScanAngleRank",
-    ]
-    r = LidarRasterizer(lidarfile, outdir, resolution, bbox, dimensions, prefix=prefix)
 
-    r.start()
+    kvnetixes = [(6167, 729), (6171, 727), (6176, 724), (6184, 720), (6220, 717)]
+
+    for kvnetix in kvnetixes:
+        bbox = Bbox(
+            kvnetix[1] * 1000,
+            kvnetix[0] * 1000,
+            kvnetix[1] * 1000 + 1000,
+            kvnetix[0] * 1000 + 1000,
+        )
+        tile = f"1km_{kvnetix[0]}_{kvnetix[1]}"
+        lidarfile = (
+            Path(
+                "/Volumes/GoogleDrive/My Drive/Septima - Ikke synkroniseret/Projekter/SDFE/Befæstelse/data/trænings_las"
+            )
+            / f"{tile}.las"
+        )
+        outdir = ""
+        prefix = f"{tile}_"
+        dimensions = [
+            "Intensity",
+            "Amplitude",
+            "Pulse width",
+            "ReturnNumber",
+            "ScanAngleRank",
+            "PointSourceId",
+        ]
+        r = LidarRasterizer(
+            str(lidarfile), outdir, resolution, bbox, dimensions, prefix=prefix
+        )
+        r.start()
 
 
 if __name__ == "__main__":
