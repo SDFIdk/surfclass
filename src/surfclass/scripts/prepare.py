@@ -35,6 +35,8 @@ def prepare():
 def lidargrid(lidarfile, bbox, resolution, dimension, outdir, prefix, postfix):
     r"""Rasterize lidar data
 
+    Rasterize one or more lidar files into grid cells.
+
     Example:
 
     surfclass prepare lidargrid -b 721000 6150000 722000 6151000 -r 0.4
