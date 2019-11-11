@@ -22,7 +22,7 @@ dimension_nodata = {
 class LidarRasterizer:
     def __init__(
         self,
-        lidarfile,
+        lidarfiles,
         outdir,
         resolution,
         bbox,
@@ -31,35 +31,21 @@ class LidarRasterizer:
         postfix=None,
         filterexp=None,
     ):
-        self.lidar = lidarfile
+        self.lidarfiles = (
+            [lidarfiles] if isinstance(lidarfiles, (str, Path)) else list(lidarfiles)
+        )
         self.outdir = outdir or ""
         self.fileprefix = prefix or ""
         self.filepostfix = postfix or ""
         self.resolution = resolution
         self.bbox = Bbox(*bbox)
         self.dimensions = self._validate_dimensions(dimensions)
-        self.reader = self._create_pipeline_reader(lidarfile)
+        self.pipeline = self._create_pipeline()
         self.filterexp = filterexp
 
     def start(self):
-        xmin, ymin, xmax, ymax = self.bbox
-        logger.warning("Filtering away everything but ground")
-        rangefilter = {
-            "type": "filters.range",
-            "limits": "Classification[2:2]",  # Ground classification
-        }
-        # xmin and ymax are inclusive, xmax and ymin are inclusive. Otherwise out gridsampler crashes
-        boundsfilter = {
-            "type": "filters.crop",
-            "bounds": f"([{xmin}, {xmax - 0.00001}], [{ymin + 0.00001}, {ymax}])",
-        }
-
-        # Build the pipeline by concating the reader, filter and writers
-        pipeline_dict = {"pipeline": [self.reader, boundsfilter, rangefilter]}
-        pipeline_json = json.dumps(pipeline_dict)
-        logger.debug("Using pipeline: %s", pipeline_json)
-
         # Convert the pipeline to stringified JSON (required by PDAL)
+        pipeline_json = json.dumps(self.pipeline)
         pipeline = pdal.Pipeline(pipeline_json)
 
         if pipeline.validate():
@@ -81,8 +67,7 @@ class LidarRasterizer:
         points = points[points[:]["Pulse width"] < 2.55]
 
         sampler = lidar.GridSampler(points, self.bbox, self.resolution)
-        origin = (xmin, ymax)
-
+        origin = (self.bbox.xmin, self.bbox.ymax)
         for dim in self.dimensions:
             nodata = dimension_nodata[dim]
             outfile = self._output_filename(dim)
@@ -91,11 +76,29 @@ class LidarRasterizer:
                 outfile, grid, origin, self.resolution, 25832, nodata=nodata
             )
 
-    @classmethod
-    def _create_pipeline_reader(cls, lidarfile):
-        # pdal does not accetp backslashes in paths (windows style)
-        # oddly enough this can be solved by using PureWindowsPath
-        return {"type": "readers.las", "filename": lidarfile}
+    def _create_pipeline(self):
+        # The "merge" filter is not strictly necessary according to https://pdal.io/stages/filters.merge.html#filters-merge
+        # but lets be explicit about it
+        pipeline = list(self.lidarfiles)
+
+        merge = {"type": "filters.merge"}
+        pipeline.append(merge)
+        logger.warning("Filtering away everything but ground")
+        rangefilter = {
+            "type": "filters.range",
+            "limits": "Classification[2:2]",  # Ground classification
+        }
+        pipeline.append(rangefilter)
+        # xmin and ymax are inclusive, xmax and ymin are inclusive. Otherwise out gridsampler crashes
+        xmin, ymin, xmax, ymax = self.bbox
+        boundsfilter = {
+            "type": "filters.crop",
+            "bounds": f"([{xmin}, {xmax - 0.00001}], [{ymin + 0.00001}, {ymax}])",
+        }
+        pipeline.append(boundsfilter)
+
+        # Build the pipeline by concating the reader, filter and writers
+        return {"pipeline": pipeline}
 
     def _output_filename(self, dimension):
         dimname = dimension.replace(" ", "")
