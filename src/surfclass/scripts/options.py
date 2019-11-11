@@ -1,4 +1,4 @@
-import re
+# pylint: disable=W0613
 import click
 from surfclass import Bbox
 
