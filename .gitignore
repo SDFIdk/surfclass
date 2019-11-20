@@ -4,4 +4,8 @@
 src/*.egg-info
 src/surfclass/*.egg-info
 src/surfclass/__pycache__
+src/surfclass/testdata
 tests/__pycache__
+
+# Type checking
+.mypy_cache

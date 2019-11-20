@@ -23,6 +23,8 @@ jobs:
           source /opt/conda/etc/profile.d/conda.sh
           conda activate surfclass_dev
           pytest ./tests
+          mkdir test-reports
+          pytest --junitxml=test-reports/junit.xml ./tests
     - run:
         name: Lint with black
         command: |
@@ -35,7 +37,12 @@ jobs:
           source /opt/conda/etc/profile.d/conda.sh
           conda activate surfclass_dev        
           pylint --rcfile=setup.cfg src
-       
+
+    - store_test_results:
+          path: test-reports
+    - store_artifacts:
+        path: test-reports    
+
 workflows:
   lint_and_test:
     jobs:
