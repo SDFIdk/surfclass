@@ -21,7 +21,9 @@ def bbox_to_ogr_polygon(bbox):
     return poly
 
 
-class ClassCounter:
+class MaskedRasterReader:
+    """Reads part of a raster defined by a polygon into a masked 2D array"""
+
     def __init__(self, raster_path):
         self._ds = gdal.Open(raster_path, gdal.GA_ReadOnly)
         assert self._ds, "Could not open raster"
@@ -29,6 +31,7 @@ class ClassCounter:
         self._bbox = None
         self.geotransform = self._ds.GetGeoTransform()
         self.nodata = self._band.GetNoDataValue()
+        self.srs = self._ds
 
         # Memory drivers
         self._ogr_mem_drv = ogr.GetDriverByName("Memory")
@@ -48,18 +51,20 @@ class ClassCounter:
     def bbox_to_pixel_window(self, bbox):
         originX, pixel_width, _, originY, _, pixel_height = self.geotransform
         x1 = int((bbox[0] - originX) / pixel_width)
-        x2 = int((bbox[1] - originX) / pixel_width) + 1
+        x2 = int((bbox[1] - originX) / pixel_width + 0.5)
         y1 = int((bbox[3] - originY) / pixel_height)
-        y2 = int((bbox[2] - originY) / pixel_height) + 1
+        y2 = int((bbox[2] - originY) / pixel_height + 0.5)
         xsize = x2 - x1
         ysize = y2 - y1
         return (x1, y1, xsize, ysize)
 
-    def count_classes_inside(self, geom):
+    def read_masked(self, geom):
         if not isinstance(geom, ogr.Geometry):
             raise TypeError("Must be OGR geometry")
         mem_type = geom.GetGeometryType()
         src_offset = self.bbox_to_pixel_window(geom.GetEnvelope())
+        if src_offset[2] <= 0 or src_offset[3] <= 0:
+            return np.ma.array((0, 0))
         src_array = self._band.ReadAsArray(*src_offset)
         # calculate new geotransform of the feature subset
         new_gt = (
@@ -73,7 +78,7 @@ class ClassCounter:
 
         # Create a temporary vector layer in memory
         mem_ds = self._ogr_mem_drv.CreateDataSource("out")
-        mem_layer = mem_ds.CreateLayer("mem_lyr", None, mem_type)
+        mem_layer = mem_ds.CreateLayer("mem_lyr", geom.GetSpatialReference(), mem_type)
         mem_feature = ogr.Feature(mem_layer.GetLayerDefn())
         mem_feature.SetGeometry(geom)
         mem_layer.CreateFeature(mem_feature)
@@ -82,6 +87,7 @@ class ClassCounter:
         mem_raster_ds = self._gdal_mem_drv.Create(
             "", src_offset[2], src_offset[3], 1, gdal.GDT_Byte
         )
+        mem_raster_ds.SetProjection(self._ds.GetProjection())
         mem_raster_ds.SetGeoTransform(new_gt)
         # Burn 1 inside our feature
         gdal.RasterizeLayer(mem_raster_ds, [1], mem_layer, burn_values=[1])
@@ -89,9 +95,70 @@ class ClassCounter:
 
         # Mask the source data array with our current feature mask
         masked = np.ma.MaskedArray(src_array, mask=np.logical_not(rasterized_array))
+        return masked
 
+
+class StatsCalculator:
+    def __init__(self, featurereader, maskedrasterreader, outputlayer, classes):
+        self._featurereader = featurereader
+        self._rasterreader = maskedrasterreader
+        self._outlyr = outputlayer
+        self._classmap = (
+            classes if isinstance(classes, dict) else {x: f"class_{x}" for x in classes}
+        )
+        self._class_field_index = None
+        self._total_field = "total_count"
+        self._total_field_index = None
+        self._zero_counts = {x: 0 for x in self._classmap}
+
+    def process(self):
+        self._add_fields()
+        vdefn = self._outlyr.GetLayerDefn()
+        for f in self._featurereader:
+            all_classes = dict(self._zero_counts)
+            class_counts = self._count_classes_inside(f.geometry())
+            # Add zero counts for classes not seen
+            all_classes.update(class_counts)
+            outfeat = ogr.Feature(vdefn)
+            outfeat.SetFrom(f)
+            total_count = 0
+            for class_id, count in all_classes.items():
+                total_count += count
+                try:
+                    field_id = self._class_field_index[class_id]
+                    outfeat.SetFieldInteger64(field_id, count)
+                except KeyError:
+                    pass
+            outfeat.SetFieldInteger64(self._total_field_index, total_count)
+            self._outlyr.CreateFeature(outfeat)
+
+    def _add_fields(self):
+        self._class_field_index = {}
+        vdefn = self._outlyr.GetLayerDefn()
+        for class_id, name in self._classmap.items():
+            # has the field been created already?
+            field_index = vdefn.GetFieldIndex(name)
+            if field_index < 0:
+                # Create field
+                fd = ogr.FieldDefn(name, ogr.OFTInteger64)
+                self._outlyr.CreateField(fd)
+                field_index = vdefn.GetFieldIndex(name)
+            assert field_index >= 0, "Could not create field %s" % name
+            self._class_field_index[class_id] = field_index
+        # Field for total count
+        field_index = vdefn.GetFieldIndex(self._total_field)
+        if field_index < 0:
+            # Create field
+            fd = ogr.FieldDefn(self._total_field, ogr.OFTInteger64)
+            self._outlyr.CreateField(fd)
+            self._total_field_index = vdefn.GetFieldIndex(self._total_field)
+            field_index = vdefn.GetFieldIndex(self._total_field)
+        assert field_index >= 0, "Could not create field %s" % self._total_field
+
+    def _count_classes_inside(self, geom):
+        masked_data = self._rasterreader.read_masked(geom)
         # Ok, now count classes (including nodata):
-        unique, counts = np.unique(masked.compressed(), return_counts=True)
+        unique, counts = np.unique(masked_data.compressed(), return_counts=True)
         class_counts = dict(zip(unique, counts))
         return class_counts
 
@@ -103,6 +170,7 @@ class FeatureReader:
         self.lyr = self.ds.GetLayerByName(layer) if layer else self.ds.GetLayer(0)
         assert self.lyr, "Could not open datasource layer"
         self.schema = self.lyr.GetLayerDefn()
+        self.srs = self.schema.GetGeomFieldDefn(0).srs
         self._clip = False
         self._bbox_filter = None
         self._clip_geom = None
@@ -112,6 +180,7 @@ class FeatureReader:
         self._bbox_filter = Bbox(*bbox) if bbox else None
         if clip and bbox:
             self._clip_geom = bbox_to_ogr_polygon(bbox)
+            self._clip_geom.AssignSpatialReference(self.srs)
         self.reset_reading()
 
     def reset_reading(self):
@@ -132,18 +201,83 @@ class FeatureReader:
         return feat
 
 
+def open_or_create_destination_datasource(dst_ds_name, dst_format=None, dsco=[]):
+    dst_ds = ogr.Open(dst_ds_name, update=1)
+    if dst_ds is None:
+        dst_ds = ogr.Open(dst_ds_name)
+        if dst_ds is not None:
+            raise Exception(
+                'Output datasource "%s" exists, but cannot be opened in update mode'
+                % dst_ds
+            )
+        drv = ogr.GetDriverByName(dst_format)
+        if drv is None:
+            raise Exception("Cannot find driver %s" % dst_format)
+        dst_ds = drv.CreateDataSource(dst_ds_name, options=dsco)
+        if dst_ds is None:
+            raise Exception("Cannot create datasource '%s'" % dst_ds_name)
+    return dst_ds
+
+
+def open_or_create_similar_layer(src_lyr, dst_ds, dst_lyr_name=None, lco=[]):
+    if dst_lyr_name is None:
+        count = dst_ds.GetLayerCount()
+        if count > 1:
+            raise Exception(
+                "Destination datasource has multiple layers. Layername must be specified"
+            )
+        elif count == 1:
+            lyr = dst_ds.GetLayer(0)
+        else:
+            lyr = dst_ds.CreateLayer(
+                "surfclass", src_lyr.GetSpatialRef(), src_lyr.GetGeomType(), lco
+            )
+            copy_fields(src_lyr, lyr)
+    else:
+        lyr = dst_ds.GetLayer(dst_lyr_name)
+        if lyr is None:
+            lyr = dst_ds.CreateLayer(
+                dst_lyr_name, src_lyr.GetSpatialRef(), src_lyr.GetGeomType(), lco
+            )
+            if lyr is None:
+                raise Exception('Could not create layer "%s"' % dst_lyr_name)
+            copy_fields(src_lyr, lyr)
+    return lyr
+
+
+def copy_fields(src_lyr, dst_lyr):
+    layer_defn = src_lyr.GetLayerDefn()
+    for idx in range(layer_defn.GetFieldCount()):
+        fld_defn = layer_defn.GetFieldDefn(idx)
+        if dst_lyr.CreateField(fld_defn) != 0:
+            raise Exception(
+                'Cannot create field "%s" in layer "%s"'
+                % (fld_defn.GetName(), dst_lyr.GetName())
+            )
+
+
 def test():
+    from pathlib import Path
+
     class_raster = "/Users/asger/Downloads/1km_6171_727_scanangle_intensity_amplitude_prediction/1km_6171_727_scanangle_intensity_amplitude_prediction.tif"
     poly_ds = "/Volumes/GoogleDrive/My Drive/Septima - Ikke synkroniseret/Projekter/SDFE/Befæstelse/data/trænings_polygoner/1km_6171_727.sqlite"
     poly_lyr = "1km_6171_727"
+    classes = range(7)
 
-    counter = ClassCounter(class_raster)
-    raster_bbox = counter.bbox
+    dst_format = "GeoJSON"
+    dst_name = "test.json"
+    Path(dst_name).unlink()
+
+    raster_reader = MaskedRasterReader(class_raster)
     reader = FeatureReader(poly_ds, poly_lyr)
+    raster_bbox = raster_reader.bbox
     reader.set_bbox_filter(raster_bbox, clip=True)
-    for f in reader:
-        classes = counter.count_classes_inside(f.geometry())
-        print(classes)
+
+    ds = open_or_create_destination_datasource(dst_name, dst_format)
+    lyr = open_or_create_similar_layer(reader.lyr, ds)
+
+    calc = StatsCalculator(reader, raster_reader, lyr, classes)
+    calc.process()
 
 
 if __name__ == "__main__":
