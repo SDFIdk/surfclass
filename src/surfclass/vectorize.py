@@ -251,7 +251,7 @@ def open_or_create_similar_layer(src_lyr, dst_ds, dst_lyr_name=None, lco=None):
             raise Exception(
                 "Destination datasource has multiple layers. Layername must be specified"
             )
-        elif count == 1:
+        if count == 1:
             lyr = dst_ds.GetLayer(0)
         else:
             lyr = dst_ds.CreateLayer(
@@ -279,31 +279,3 @@ def copy_fields(src_lyr, dst_lyr):
                 'Cannot create field "%s" in layer "%s"'
                 % (fld_defn.GetName(), dst_lyr.GetName())
             )
-
-
-def test():
-    from pathlib import Path
-
-    class_raster = "/Users/asger/Downloads/1km_6171_727_scanangle_intensity_amplitude_prediction/1km_6171_727_scanangle_intensity_amplitude_prediction.tif"
-    poly_ds = "/Volumes/GoogleDrive/My Drive/Septima - Ikke synkroniseret/Projekter/SDFE/Befæstelse/data/trænings_polygoner/1km_6171_727.sqlite"
-    poly_lyr = "1km_6171_727"
-    classes = range(7)
-
-    dst_format = "GeoJSON"
-    dst_name = "test.json"
-    Path(dst_name).unlink()
-
-    raster_reader = MaskedRasterReader(class_raster)
-    reader = FeatureReader(poly_ds, poly_lyr)
-    raster_bbox = raster_reader.bbox
-    reader.set_bbox_filter(raster_bbox, clip=True)
-
-    ds = open_or_create_destination_datasource(dst_name, dst_format)
-    lyr = open_or_create_similar_layer(reader.lyr, ds)
-
-    calc = StatsCalculator(reader, raster_reader, lyr, classes)
-    calc.process()
-
-
-if __name__ == "__main__":
-    test()
