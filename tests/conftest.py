@@ -18,3 +18,13 @@ def data_dir():
 @pytest.fixture(scope="session")
 def las_filepath(data_dir):
     return Path(data_dir) / "1km_6171_727_decimated.las"
+
+
+@pytest.fixture(scope="session")
+def classraster_filepath(data_dir):
+    return Path(data_dir) / "classes.tif"
+
+
+@pytest.fixture(scope="session")
+def polygons_filepath(data_dir):
+    return Path(data_dir) / "polygons.geojson"
