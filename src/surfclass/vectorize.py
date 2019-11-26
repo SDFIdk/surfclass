@@ -25,17 +25,25 @@ class MaskedRasterReader:
     """Reads part of a raster defined by a polygon into a masked 2D array"""
 
     def __init__(self, raster_path):
-        self._ds = gdal.Open(raster_path, gdal.GA_ReadOnly)
+        self._ds = gdal.Open(str(raster_path), gdal.GA_ReadOnly)
         assert self._ds, "Could not open raster"
         self._band = self._ds.GetRasterBand(1)
         self._bbox = None
+        self._srs = None
         self.geotransform = self._ds.GetGeoTransform()
         self.nodata = self._band.GetNoDataValue()
-        self.srs = self._ds
 
         # Memory drivers
         self._ogr_mem_drv = ogr.GetDriverByName("Memory")
         self._gdal_mem_drv = gdal.GetDriverByName("MEM")
+
+    @property
+    def srs(self):
+        if self._srs is None:
+            srs = osr.SpatialReference()
+            srs.ImportFromWkt(self._ds.GetProjection())
+            self._srs = srs
+        return self._srs
 
     @property
     def bbox(self):
@@ -46,14 +54,16 @@ class MaskedRasterReader:
             height = self.geotransform[5] * self._ds.RasterYSize
             xmax = xmin + width
             ymin = ymax + height
-            return Bbox(xmin, ymin, xmax, ymax)
+            self._bbox = Bbox(xmin, ymin, xmax, ymax)
+        return self._bbox
 
     def bbox_to_pixel_window(self, bbox):
+        xmin, ymin, xmax, ymax = bbox
         originX, pixel_width, _, originY, _, pixel_height = self.geotransform
-        x1 = int((bbox[0] - originX) / pixel_width)
-        x2 = int((bbox[1] - originX) / pixel_width + 0.5)
-        y1 = int((bbox[3] - originY) / pixel_height)
-        y2 = int((bbox[2] - originY) / pixel_height + 0.5)
+        x1 = int((xmin - originX) / pixel_width)
+        x2 = int((xmax - originX) / pixel_width + 0.5)
+        y1 = int((ymax - originY) / pixel_height)
+        y2 = int((ymin - originY) / pixel_height + 0.5)
         xsize = x2 - x1
         ysize = y2 - y1
         return (x1, y1, xsize, ysize)
@@ -62,9 +72,11 @@ class MaskedRasterReader:
         if not isinstance(geom, ogr.Geometry):
             raise TypeError("Must be OGR geometry")
         mem_type = geom.GetGeometryType()
-        src_offset = self.bbox_to_pixel_window(geom.GetEnvelope())
+        ogr_env = geom.GetEnvelope()
+        geom_bbox = Bbox(ogr_env[0], ogr_env[2], ogr_env[1], ogr_env[3])
+        src_offset = self.bbox_to_pixel_window(geom_bbox)
         if src_offset[2] <= 0 or src_offset[3] <= 0:
-            return np.ma.array((0, 0))
+            return np.ma.empty(shape=(0, 0))
         src_array = self._band.ReadAsArray(*src_offset)
         # calculate new geotransform of the feature subset
         new_gt = (
@@ -164,11 +176,19 @@ class StatsCalculator:
 
 
 class FeatureReader:
-    def __init__(self, datasource_string, layer=None):
-        self.ds = ogr.Open(datasource_string, gdal.GA_ReadOnly)
-        assert self.ds, "Could not open OGR datasource"
-        self.lyr = self.ds.GetLayerByName(layer) if layer else self.ds.GetLayer(0)
-        assert self.lyr, "Could not open datasource layer"
+    def __init__(self, datasource, layer=None):
+        self.ds = (
+            datasource
+            if isinstance(datasource, ogr.DataSource)
+            else ogr.Open(str(datasource), gdal.GA_ReadOnly)
+        )
+        assert self.ds, "Could not open OGR datasource: %s" % datasource
+        self.lyr = (
+            layer
+            if isinstance(layer, ogr.Layer)
+            else (self.ds.GetLayerByName(layer) if layer else self.ds.GetLayer(0))
+        )
+        assert self.lyr, "Could not open datasource layer %s" % layer
         self.schema = self.lyr.GetLayerDefn()
         self.srs = self.schema.GetGeomFieldDefn(0).srs
         self._clip = False
@@ -178,9 +198,14 @@ class FeatureReader:
     def set_bbox_filter(self, bbox, clip=False):
         self._clip = clip
         self._bbox_filter = Bbox(*bbox) if bbox else None
-        if clip and bbox:
-            self._clip_geom = bbox_to_ogr_polygon(bbox)
-            self._clip_geom.AssignSpatialReference(self.srs)
+        if not bbox:
+            # Unset filter
+            self.lyr.SetSpatialFilter(None)
+        else:
+            self.lyr.SetSpatialFilterRect(*bbox)
+            if clip:
+                self._clip_geom = bbox_to_ogr_polygon(bbox)
+                self._clip_geom.AssignSpatialReference(self.srs)
         self.reset_reading()
 
     def reset_reading(self):
@@ -201,7 +226,7 @@ class FeatureReader:
         return feat
 
 
-def open_or_create_destination_datasource(dst_ds_name, dst_format=None, dsco=[]):
+def open_or_create_destination_datasource(dst_ds_name, dst_format=None, dsco=None):
     dst_ds = ogr.Open(dst_ds_name, update=1)
     if dst_ds is None:
         dst_ds = ogr.Open(dst_ds_name)
@@ -213,13 +238,13 @@ def open_or_create_destination_datasource(dst_ds_name, dst_format=None, dsco=[])
         drv = ogr.GetDriverByName(dst_format)
         if drv is None:
             raise Exception("Cannot find driver %s" % dst_format)
-        dst_ds = drv.CreateDataSource(dst_ds_name, options=dsco)
+        dst_ds = drv.CreateDataSource(dst_ds_name, options=dsco or [])
         if dst_ds is None:
             raise Exception("Cannot create datasource '%s'" % dst_ds_name)
     return dst_ds
 
 
-def open_or_create_similar_layer(src_lyr, dst_ds, dst_lyr_name=None, lco=[]):
+def open_or_create_similar_layer(src_lyr, dst_ds, dst_lyr_name=None, lco=None):
     if dst_lyr_name is None:
         count = dst_ds.GetLayerCount()
         if count > 1:
@@ -230,14 +255,14 @@ def open_or_create_similar_layer(src_lyr, dst_ds, dst_lyr_name=None, lco=[]):
             lyr = dst_ds.GetLayer(0)
         else:
             lyr = dst_ds.CreateLayer(
-                "surfclass", src_lyr.GetSpatialRef(), src_lyr.GetGeomType(), lco
+                "surfclass", src_lyr.GetSpatialRef(), src_lyr.GetGeomType(), lco or []
             )
             copy_fields(src_lyr, lyr)
     else:
         lyr = dst_ds.GetLayer(dst_lyr_name)
         if lyr is None:
             lyr = dst_ds.CreateLayer(
-                dst_lyr_name, src_lyr.GetSpatialRef(), src_lyr.GetGeomType(), lco
+                dst_lyr_name, src_lyr.GetSpatialRef(), src_lyr.GetGeomType(), lco or []
             )
             if lyr is None:
                 raise Exception('Could not create layer "%s"' % dst_lyr_name)
