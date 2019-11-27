@@ -7,19 +7,19 @@ def test_cli_extract(cli_runner):
     assert result.exit_code == 0
 
 
-def test_cli_extract_stats_help(cli_runner):
+def test_cli_extract_count_help(cli_runner):
     result = cli_runner.invoke(
-        cli, ["extract", "stats", "--help"], catch_exceptions=False
+        cli, ["extract", "count", "--help"], catch_exceptions=False
     )
     assert result.exit_code == 0
 
 
-def test_cli_extract_stats(
+def test_cli_extract_count(
     cli_runner, classraster_filepath, polygons_filepath, tmp_path
 ):
-    outfile = tmp_path / "stats.geojson"
+    outfile = tmp_path / "count.geojson"
     args = (
-        f"extract stats --in {polygons_filepath} --out {outfile} --format geojson --clip"
+        f"extract count --in {polygons_filepath} --out {outfile} --format geojson --clip"
         f" --classrange 0 5 {classraster_filepath}"
     )
 
