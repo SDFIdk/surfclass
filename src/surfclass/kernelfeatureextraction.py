@@ -1,6 +1,5 @@
-from osgeo import gdal, ogr, osr
+from osgeo import gdal
 import numpy as np
-from surfclass import Bbox
 
 as_strided = np.lib.stride_tricks.as_strided
 
@@ -28,25 +27,12 @@ class KernelFeatureExtraction:
         self.nodata = self._band.GetNoDataValue()
         self.array = self.readBandAsArray()
 
-    @property
-    def bbox(self):
-        if self._bbox is None:
-            xmin = self.geotransform[0]
-            ymax = self.geotransform[3]
-            width = self.geotransform[1] * self._ds.RasterXSize
-            height = self.geotransform[5] * self._ds.RasterYSize
-            xmax = xmin + width
-            ymin = ymax + height
-            self._bbox = Bbox(xmin, ymin, xmax, ymax)
-
-        return self._bbox
-
     def readBandAsArray(self):
         src_offset = self.bbox_to_pixel_window()
         return self._band.ReadAsArray(*src_offset)
 
     def bbox_to_pixel_window(self):
-        xmin, ymin, xmax, ymax = self.bbox
+        xmin, ymin, xmax, ymax = self._bbox
         originX, pixel_width, _, originY, _, pixel_height = self.geotransform
         x1 = int((xmin - originX) / pixel_width)
         x2 = int((xmax - originX) / pixel_width + 0.5)

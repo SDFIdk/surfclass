@@ -2,12 +2,12 @@ import logging
 import click
 from surfclass.scripts import options
 from surfclass.vectorize import (
-    MaskedRasterReader,
     FeatureReader,
     StatsCalculator,
     open_or_create_destination_datasource,
     open_or_create_similar_layer,
 )
+from surfclass.rasterreader import MaskedRasterReader
 
 logger = logging.getLogger(__name__)
 

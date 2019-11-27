@@ -23,3 +23,4 @@ def test_kernelfeatureextraction(amplituderaster_filepath):
     assert len(derived_features) == 2
     # Since we reflected output shape is equal to input shape
     assert derived_features[0].shape == (250, 250)
+
