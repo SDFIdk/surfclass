@@ -48,6 +48,25 @@ class RasterReader:
         ysize = y2 - y1
         return (x1, y1, xsize, ysize)
 
+    def read_raster(self, bbox=None, masked=False):
+        """
+        Read raster with optional bbox and return as masked or raw numpy array
+        """
+        if bbox is None:
+            bbox = self.bbox
+        src_offset = self.bbox_to_pixel_window(bbox)
+        src_array = self._band.ReadAsArray(*src_offset)
+
+        if src_offset[2] <= 0 or src_offset[3] <= 0:
+            if masked:
+                return np.ma.empty(shape=(0, 0))
+            return np.empty(shape=(0, 0))
+
+        if masked:
+            return np.ma.MaskedArray(src_array, self.nodata)
+
+        return src_array
+
 
 class MaskedRasterReader(RasterReader):
     """Reads part of a raster defined by a polygon into a masked 2D array"""

@@ -1,5 +1,6 @@
 from osgeo import gdal
 import numpy as np
+from surfclass.rasterreader import RasterReader
 
 as_strided = np.lib.stride_tricks.as_strided
 
@@ -15,36 +16,18 @@ class KernelFeatureExtraction:
     """
 
     def __init__(self, raster_path, bbox):
-        # TODO: replace this with a MaskedRasterReader
-        # TODO: add output path
-        # TODO: Handle naming of output file _var, _mean etc.
-        self._ds = gdal.Open(str(raster_path), gdal.GA_ReadOnly)
-        assert self._ds, "Could not open raster"
 
+        self.rasterreader = RasterReader(raster_path)
         self._bbox = bbox
-        self.geotransform = self._ds.GetGeoTransform()
-        self._band = self._ds.GetRasterBand(1)
-        self.nodata = self._band.GetNoDataValue()
-        self.array = self.readBandAsArray()
-
-    def readBandAsArray(self):
-        src_offset = self.bbox_to_pixel_window()
-        return self._band.ReadAsArray(*src_offset)
-
-    def bbox_to_pixel_window(self):
-        xmin, ymin, xmax, ymax = self._bbox
-        originX, pixel_width, _, originY, _, pixel_height = self.geotransform
-        x1 = int((xmin - originX) / pixel_width)
-        x2 = int((xmax - originX) / pixel_width + 0.5)
-        y1 = int((ymax - originY) / pixel_height)
-        y2 = int((ymin - originY) / pixel_height + 0.5)
-        xsize = x2 - x1
-        ysize = y2 - y1
-        return (x1, y1, xsize, ysize)
+        self.nodata = self.rasterreader.nodata
+        self.array = self.rasterreader.read_raster(bbox=self._bbox, masked=False)
 
     def calculate_derived_features(self, neighborhood=5, crop_mode=True):
+        """
+        Calculates the derived features, mean and variance for a given neighborhood and crop_mode
+        Returns list of numpy arrays
+        """
         features = []
-        # band_names = []
 
         windows = self.matrix_as_windows(self.array, neighborhood, crop_mode)
 
@@ -56,9 +39,6 @@ class KernelFeatureExtraction:
         # TODO: add argument to determine what features we want here.
         features.append(np.ma.mean(mask, axis=2))
         features.append(np.ma.var(mask, axis=2))
-
-        # band_names.append(band_name + "_mean")
-        # band_names.append(band_name + "_var")
 
         return features
 
