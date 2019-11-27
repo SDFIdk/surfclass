@@ -28,3 +28,8 @@ def classraster_filepath(data_dir):
 @pytest.fixture(scope="session")
 def polygons_filepath(data_dir):
     return Path(data_dir) / "polygons.geojson"
+
+
+@pytest.fixture(scope="session")
+def amplituderaster_filepath(data_dir):
+    return Path(data_dir) / "1km_6171_727_amplitude_4m.tif"
