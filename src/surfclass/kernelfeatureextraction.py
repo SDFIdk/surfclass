@@ -45,7 +45,7 @@ class KernelFeatureExtraction:
     def matrix_as_windows(matrix, neighborhood, crop_mode):
         """
         Calculates the "windows" of a x,y matrix with a given neighborhood
-        Uses np.lib.stride_tricks.as_strided to get the memory locations of the windows       
+        Uses np.lib.stride_tricks.as_strided to get the memory locations of the windows
         Requires matrix to be an np.array with 2 dimensions (x,y)
         Returns: np.array of size (x,y,neighborhood**2).
         """
