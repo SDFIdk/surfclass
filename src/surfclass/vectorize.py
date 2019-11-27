@@ -1,4 +1,4 @@
-from osgeo import gdal, ogr, osr
+from osgeo import gdal, ogr
 import numpy as np
 from surfclass import Bbox
 
