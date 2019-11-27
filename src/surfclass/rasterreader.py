@@ -71,6 +71,7 @@ class RasterReader:
 class MaskedRasterReader(RasterReader):
     """Reads part of a raster defined by a polygon into a masked 2D array"""
 
+    # TODO: rename to something with geom and refactor
     def read_masked(self, geom):
         if not isinstance(geom, ogr.Geometry):
             raise TypeError("Must be OGR geometry")

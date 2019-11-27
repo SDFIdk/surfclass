@@ -62,3 +62,10 @@ def test_cli_prepare_lidargrid_multiple_lidarfiles(cli_runner, las_filepath, tmp
     band = ds.GetRasterBand(1)
     assert band.DataType == gdal.GDT_UInt16
     ds = None
+
+
+def test_cli_prepare_extractfeatures(cli_runner, amplituderaster_filepath, tmp_path):
+    args = f"prepare extractfeatures -b 727000 6171000 728000 6172000 -n 5 -c reflect {amplituderaster_filepath} {tmp_path}"
+
+    result = cli_runner.invoke(cli, args.split(" "), catch_exceptions=False)
+    assert result.exit_code == 0
