@@ -4,7 +4,7 @@ from surfclass.scripts import options
 from surfclass.vectorize import (
     MaskedRasterReader,
     FeatureReader,
-    StatsCalculator,
+    ClassCounter,
     open_or_create_destination_datasource,
     open_or_create_similar_layer,
 )
@@ -45,7 +45,7 @@ def extract():
     "--lco", type=str, required=False, multiple=True, help="OGR layer creation option"
 )
 @click.argument("classraster", type=str)
-def stats(
+def count(
     indataset,
     inlyr,
     outdataset,
@@ -63,7 +63,7 @@ def stats(
     This tool counts the ocurrences of specified cell values whose cell center falls inside a polygon and adds the
     counts as feature attributes.
 
-    An attribute per reported class is added. The attribute "class_0" reports the number of cells with the value 0
+    An attribute per reported class is added. The attribute "class_n" reports the number of cells with the value n
     within the polygon and a "total_count" attribute reports the total number of cells within the polygon.
 
     Vector operations are carreid out using the OGR library and as such datasources, layers and associated creation
@@ -80,7 +80,7 @@ def stats(
     If --clip is specified the geometries read from input will be clipped to the bbox used by the tool.
 
     Example:
-    extract stats --in inpolys.shp --out outpolys.geojson --format geojson --clip --classrange 0 5 classified.tif"
+    extract count --in inpolys.shp --out outpolys.geojson --format geojson --clip --classrange 0 5 classified.tif"
     """
     classes = range(classrange[0], classrange[1] + 1)
 
@@ -95,7 +95,7 @@ def stats(
     logger.debug("Creating output layer: %s", outlyr)
     dstlyr = open_or_create_similar_layer(vector_reader.lyr, dstds, outlyr, lco)
 
-    calc = StatsCalculator(vector_reader, raster_reader, dstlyr, classes)
-    logger.debug("Beginning stats calculations")
+    calc = ClassCounter(vector_reader, raster_reader, dstlyr, classes)
+    logger.debug("Beginning counts")
     calc.process()
-    logger.debug("Done stats calculations")
+    logger.debug("Done counting")

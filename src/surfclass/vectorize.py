@@ -110,7 +110,7 @@ class MaskedRasterReader:
         return masked
 
 
-class StatsCalculator:
+class ClassCounter:
     def __init__(self, featurereader, maskedrasterreader, outputlayer, classes):
         self._featurereader = featurereader
         self._rasterreader = maskedrasterreader
