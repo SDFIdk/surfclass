@@ -11,6 +11,7 @@ class RasterReader:
         self._bbox = None
         self._srs = None
         self.geotransform = self._ds.GetGeoTransform()
+        self.resolution = self.geotransform[1]
         self.nodata = self._band.GetNoDataValue()
 
         # Memory drivers

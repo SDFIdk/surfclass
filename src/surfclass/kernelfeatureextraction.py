@@ -1,5 +1,7 @@
+from pathlib import Path
 import numpy as np
 from surfclass.rasterreader import RasterReader
+from surfclass import Bbox, rasterwriter
 
 as_strided = np.lib.stride_tricks.as_strided
 
@@ -14,21 +16,36 @@ class KernelFeatureExtraction:
     Can crop or "fix" the resulting rasters by padding the raster
     """
 
-    def __init__(self, raster_path, bbox):
-
+    def __init__(
+        self,
+        raster_path,
+        outdir,
+        bbox,
+        neighborhood=5,
+        crop_mode="reflect",
+        prefix=None,
+        postfix=None,
+    ):
+        self.outdir = outdir or ""
+        self.fileprefix = prefix or ""
+        self.filepostfix = postfix or ""
+        self.bbox = Bbox(*bbox)
         self.rasterreader = RasterReader(raster_path)
-        self._bbox = bbox
         self.nodata = self.rasterreader.nodata
-        self.array = self.rasterreader.read_raster(bbox=self._bbox, masked=False)
 
-    def calculate_derived_features(self, neighborhood=5, crop_mode=True):
-        """
-        Calculates the derived features, mean and variance for a given neighborhood and crop_mode
-        Returns list of numpy arrays
-        """
+        self.array = self.rasterreader.read_raster(bbox=self.bbox, masked=False)
+        self.neighborhood = neighborhood
+        self.crop_mode = crop_mode
+
+    def _output_filename(self, feature_name):
+        name = f"{self.fileprefix}{feature_name}{self.filepostfix}.tif"
+        return str(Path(self.outdir) / name)
+
+    def calculate_derived_features(self):
+
         features = []
-
-        windows = self.matrix_as_windows(self.array, neighborhood, crop_mode)
+        feature_names = []
+        windows = self.matrix_as_windows(self.array, self.neighborhood, self.crop_mode)
 
         if self.nodata is not None:
             mask = np.ma.masked_values(windows, self.nodata)
@@ -36,10 +53,45 @@ class KernelFeatureExtraction:
             mask = np.ma.array(windows)
 
         # TODO: add argument to determine what features we want here.
+        # Right now we calculate both features
         features.append(np.ma.mean(mask, axis=2))
         features.append(np.ma.var(mask, axis=2))
 
-        return features
+        feature_names.append("mean")
+        feature_names.append("var")
+
+        return (features, feature_names)
+
+    def start(self):
+        """
+        Calculates the derived features, mean and variance for a given neighborhood and crop_mode
+        Returns list of numpy arrays
+        """
+        # Read raw values out of raster, as matrix_as_windows does not worked on masked arrays
+
+        features, feature_names = self.calculate_derived_features()
+
+        # Figure out the new origin based on crop_mode and neighborhood
+        # If there is no crop, origin is simply UL
+        if self.crop_mode == "crop":
+            #
+            crop_amount = (
+                int((self.neighborhood - 1) / 2) * self.rasterreader.resolution
+            )
+            origin = (self.bbox.xmin + crop_amount, self.bbox.ymax - crop_amount)
+        else:
+            origin = (self.bbox.xmin, self.bbox.ymax)
+
+        for idx, feature in enumerate(features):
+            outfile = self._output_filename(feature_names[idx])
+            rasterwriter.write_to_file(
+                outfile,
+                feature,
+                origin,
+                self.rasterreader.resolution,
+                25832,
+                nodata=self.nodata,
+            )
 
     @staticmethod
     def matrix_as_windows(matrix, neighborhood, crop_mode):

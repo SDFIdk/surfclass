@@ -84,6 +84,8 @@ def lidargrid(lidarfile, bbox, resolution, dimension, outdir, prefix, postfix):
     required=True,
     help="How to handle cropping, accepted valued are: crop or reflect",
 )
+@click.option("--prefix", default=None, required=False, help="Output file prefix")
+@click.option("--postfix", default=None, required=False, help="Output file postfix")
 @click.argument(
     "rasterfile",
     type=click.Path(exists=True, dir_okay=False),
@@ -92,7 +94,7 @@ def lidargrid(lidarfile, bbox, resolution, dimension, outdir, prefix, postfix):
     nargs=1,
 )
 @click.argument("outdir", type=click.Path(exists=False, file_okay=False), nargs=1)
-def extractfeatures(rasterfile, bbox, neighborhood, cropmode, outdir):
+def extractfeatures(rasterfile, bbox, neighborhood, cropmode, outdir, prefix, postfix):
     r"""Extract features from a raster file
 
     Extract derived features from a raster file, such as mean or variance
@@ -105,20 +107,27 @@ def extractfeatures(rasterfile, bbox, neighborhood, cropmode, outdir):
     """
     # Log inputs
     logger.debug(
-        "extractfeatures started with arguments: %s, %s, %s, %s, %s",
+        "extractfeatures started with arguments: %s, %s, %s, %s, %s,%s, %s",
         rasterfile,
         bbox,
         neighborhood,
         cropmode,
         outdir,
+        prefix,
+        postfix,
     )
 
     # Make sure output dir exists
     pathlib.Path(outdir).mkdir(parents=True, exist_ok=True)
-    featureextractor = KernelFeatureExtraction(rasterfile, bbox)
-    logger.debug("Starting feature extraction")
-    features = featureextractor.calculate_derived_features(
-        neighborhood=neighborhood, crop_mode=cropmode
+    featureextractor = KernelFeatureExtraction(
+        rasterfile,
+        outdir,
+        bbox,
+        neighborhood=neighborhood,
+        crop_mode=cropmode,
+        prefix=prefix,
+        postfix=postfix,
     )
+    logger.debug("Starting feature extraction")
+    featureextractor.start()
     logger.debug("Feature extraction done!")
-    logger.debug("Writing features to disk..")
