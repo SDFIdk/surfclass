@@ -6,6 +6,7 @@ dependencies:
   - gdal=3.*
   - python-pdal=2.*
   - scikit-learn>=0.21.3
+  - scipy
   - black
   - pytest
   - pytest-clarity

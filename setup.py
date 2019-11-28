@@ -26,12 +26,14 @@ CLASSIFIERS = [
     "Programming Language :: Python :: 3.7",
     "Topic :: Scientific/Engineering :: GIS",
 ]
+
 INSTALL_REQUIRES = [
     "click",
     "click_plugins",
     "gdal>=3",
     "pdal>=2",
     "scikit-learn>=0.21.3",
+    "scipy",
 ]
 
 EXTRAS_REQUIRE = {"dev": ["pytest", "black"]}
