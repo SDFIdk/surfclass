@@ -16,11 +16,29 @@ class KernelFeatureExtraction:
     Can crop or "fix" the resulting rasters by padding the raster
     """
 
+    SUPPORTED_FEATURES = {
+        "mean": {
+            "bandname": "mean",
+            "description": "Average of neighborhood, including target cell",
+        },
+        "var": {
+            "key": "var",
+            "bandname": "var",
+            "description": "Variance of neighborhood, including target cell",
+        },
+        "diffmean": {
+            "key": "diffmean",
+            "bandname": "diffmean",
+            "description": "Average of neighborhood, minus target cell (cell value - mean)",
+        },
+    }
+
     def __init__(
         self,
         raster_path,
         outdir,
         bbox,
+        outputfeatures,
         neighborhood=5,
         crop_mode="reflect",
         prefix=None,
@@ -36,10 +54,22 @@ class KernelFeatureExtraction:
         self.array = self.rasterreader.read_raster(bbox=self.bbox, masked=False)
         self.neighborhood = neighborhood
         self.crop_mode = crop_mode
+        self.outputfeatures = self._validate_feature_keys(outputfeatures)
 
     def _output_filename(self, feature_name):
         name = f"{self.fileprefix}{feature_name}{self.filepostfix}.tif"
         return str(Path(self.outdir) / name)
+
+    def _validate_feature_keys(self, feat_keys):
+        accepted_keys = self.SUPPORTED_FEATURES.keys()
+
+        # if all keys provided by user is in the accepted keys, return them.
+        valid = all(map(lambda each: each in accepted_keys, feat_keys))
+        assert valid, "feature is not supported, accepted features are: {}".format(
+            str(accepted_keys)
+        )
+
+        return feat_keys
 
     def calculate_derived_features(self):
 
@@ -65,19 +95,21 @@ class KernelFeatureExtraction:
             slice(edge_size, self.array.shape[1] - edge_size),
         ]
 
-        features.append(
-            np.ma.masked_array(
-                np.ma.mean(masked_values, axis=2), mask=mask[crop_indices]
+        if "mean" in self.outputfeatures:
+            features.append(
+                np.ma.masked_array(
+                    np.ma.mean(masked_values, axis=2), mask=mask[crop_indices]
+                )
             )
-        )
-        features.append(
-            np.ma.masked_array(
-                np.ma.var(masked_values, axis=2), mask=mask[crop_indices]
-            )
-        )
+            feature_names.append("mean")
 
-        feature_names.append("mean")
-        feature_names.append("var")
+        if "var" in self.outputfeatures:
+            features.append(
+                np.ma.masked_array(
+                    np.ma.var(masked_values, axis=2), mask=mask[crop_indices]
+                )
+            )
+            feature_names.append("var")
 
         return (features, feature_names)
 

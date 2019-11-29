@@ -6,7 +6,12 @@ def test_kernelfeatureextraction(amplituderaster_filepath, tmp_path):
     bbox = Bbox(727000, 6171000, 728000, 6172000)
 
     extractor = KernelFeatureExtraction(
-        amplituderaster_filepath, tmp_path, bbox, prefix="test", crop_mode="crop"
+        amplituderaster_filepath,
+        tmp_path,
+        bbox,
+        ["mean", "var"],
+        prefix="test",
+        crop_mode="crop",
     )
 
     # Test basic assertion about the input array

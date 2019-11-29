@@ -93,8 +93,18 @@ def lidargrid(lidarfile, bbox, resolution, dimension, outdir, prefix, postfix):
     # TODO: extend class to take multiple files at the same time
     nargs=1,
 )
+@click.option(
+    "-f",
+    "--feature",
+    type=click.Choice(KernelFeatureExtraction.SUPPORTED_FEATURES.keys()),
+    multiple=True,
+    required=True,
+    help="Feature to extract. Multiple allowed.",
+)
 @click.argument("outdir", type=click.Path(exists=False, file_okay=False), nargs=1)
-def extractfeatures(rasterfile, bbox, neighborhood, cropmode, outdir, prefix, postfix):
+def extractfeatures(
+    rasterfile, bbox, neighborhood, feature, cropmode, outdir, prefix, postfix
+):
     r"""Extract features from a raster file
 
     Extract derived features from a raster file, such as mean or variance
@@ -107,10 +117,11 @@ def extractfeatures(rasterfile, bbox, neighborhood, cropmode, outdir, prefix, po
     """
     # Log inputs
     logger.debug(
-        "extractfeatures started with arguments: %s, %s, %s, %s, %s,%s, %s",
+        "extractfeatures started with arguments: %s, %s, %s, %s, %s,%s, %s, %s",
         rasterfile,
         bbox,
         neighborhood,
+        feature,
         cropmode,
         outdir,
         prefix,
@@ -123,6 +134,7 @@ def extractfeatures(rasterfile, bbox, neighborhood, cropmode, outdir, prefix, po
         rasterfile,
         outdir,
         bbox,
+        feature,
         neighborhood=neighborhood,
         crop_mode=cropmode,
         prefix=prefix,
