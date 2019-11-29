@@ -48,14 +48,33 @@ class KernelFeatureExtraction:
         windows = self.matrix_as_windows(self.array, self.neighborhood, self.crop_mode)
 
         if self.nodata is not None:
-            mask = np.ma.masked_values(windows, self.nodata)
+            mask = self.array == self.nodata
+            masked_values = np.ma.masked_values(windows, self.nodata)
         else:
-            mask = np.ma.array(windows)
+            mask = False
+            masked_values = np.ma.array(windows)
 
-        # TODO: add argument to determine what features we want here.
-        # Right now we calculate both features
-        features.append(np.ma.mean(mask, axis=2))
-        features.append(np.ma.var(mask, axis=2))
+        # If some cropping took place
+        if self.array.shape != masked_values[:, :, 0].shape:
+            edge_size = int((self.neighborhood - 1) / 2)
+        else:
+            edge_size = 0
+
+        crop_indices = [
+            slice(edge_size, self.array.shape[0] - edge_size),
+            slice(edge_size, self.array.shape[1] - edge_size),
+        ]
+
+        features.append(
+            np.ma.masked_array(
+                np.ma.mean(masked_values, axis=2), mask=mask[crop_indices]
+            )
+        )
+        features.append(
+            np.ma.masked_array(
+                np.ma.var(masked_values, axis=2), mask=mask[crop_indices]
+            )
+        )
 
         feature_names.append("mean")
         feature_names.append("var")
