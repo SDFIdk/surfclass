@@ -19,8 +19,8 @@ def bbox_to_ogr_polygon(bbox):
     poly.AddGeometry(ring)
     return poly
 
- 
-class StatsCalculator:
+
+class ClassCounter:
     def __init__(self, featurereader, maskedrasterreader, outputlayer, classes):
         self._featurereader = featurereader
         self._rasterreader = maskedrasterreader
