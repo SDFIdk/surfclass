@@ -1,5 +1,6 @@
 import numpy as np
 from scipy import ndimage as nd
+from skimage.filters import rank
 
 
 def fill_nearest_neighbor(a):
@@ -39,3 +40,20 @@ def sieve_mask(a, class_number, min_cluster_size, structure=np.ones((3, 3))):
     shp = a.shape
     mask = np.in1d(labeled_array, noise_idx).reshape(shp)
     return mask
+
+
+def majority_vote(a, iterations=1, structure=np.ones((3, 3))):
+    """Changes cell values to the most frequent value in its neighborhood.
+    structure: The neighborhood expressed as a 2-D array of 1’s and 0’s.
+    iterations: Number of times to repeat the process.
+    returns a
+    """
+    nodata = None
+    assert a.dtype == "uint8", "Majority vote only works for uint8"
+    if isinstance(a, np.ma.MaskedArray):
+        # windowed_histogram does not work with masked arrays
+        nodata = np.max(a) + 1
+        a = a.filled(nodata)
+    for _ in range(iterations):
+        a = rank.windowed_histogram(a, structure).argmax(axis=-1).astype("uint8")
+    return np.ma.masked_values(a, nodata) if not nodata is None else a

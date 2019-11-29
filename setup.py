@@ -34,6 +34,7 @@ INSTALL_REQUIRES = [
     "pdal>=2",
     "scikit-learn>=0.21.3",
     "scipy",
+    "scikit-image",
 ]
 
 EXTRAS_REQUIRE = {"dev": ["pytest", "black"]}
