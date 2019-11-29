@@ -3,7 +3,7 @@ import numpy as np
 from surfclass import Bbox
 from surfclass.vectorize import (
     FeatureReader,
-    StatsCalculator,
+    ClassCounter,
     open_or_create_similar_layer,
 )
 from surfclass.rasterreader import MaskedRasterReader
@@ -62,7 +62,7 @@ def test_maskedrasterreader(classraster_filepath):
     assert int(np.sum(data.compressed())) == 20432
 
 
-def test_statscalculator(classraster_filepath, polygons_filepath):
+def test_classcounter(classraster_filepath, polygons_filepath):
     vecreader = FeatureReader(polygons_filepath)
     rasreader = MaskedRasterReader(classraster_filepath)
     # Create output ds
@@ -74,7 +74,7 @@ def test_statscalculator(classraster_filepath, polygons_filepath):
     vecreader.reset_reading()
 
     classes = range(6)
-    calc = StatsCalculator(vecreader, rasreader, out_lyr, classes)
+    calc = ClassCounter(vecreader, rasreader, out_lyr, classes)
     calc.process()
 
     out_reader = FeatureReader(out_ds, out_lyr)
