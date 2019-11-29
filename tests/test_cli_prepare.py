@@ -69,3 +69,5 @@ def test_cli_prepare_extractfeatures(cli_runner, amplituderaster_filepath, tmp_p
 
     result = cli_runner.invoke(cli, args.split(" "), catch_exceptions=False)
     assert result.exit_code == 0
+
+    # TODO: Write more test cases
