@@ -71,3 +71,21 @@ def test_cli_prepare_extractfeatures(cli_runner, amplituderaster_filepath, tmp_p
     assert result.exit_code == 0
 
     # TODO: Write more test cases
+    outfile = tmp_path / "mean.tif"
+    ds = gdal.Open(str(outfile))
+    assert ds.GetGeoTransform() == (727000, 4, 0, 6172000, 0, -4)
+    assert ds.RasterXSize == 250
+    assert ds.RasterYSize == 250
+    band = ds.GetRasterBand(1)
+    assert band.DataType == gdal.GDT_Float64
+    ds = None
+
+    outfile = tmp_path / "var.tif"
+    ds = gdal.Open(str(outfile))
+    assert ds.GetGeoTransform() == (727000, 4, 0, 6172000, 0, -4)
+    assert ds.RasterXSize == 250
+    assert ds.RasterYSize == 250
+    band = ds.GetRasterBand(1)
+    assert band.DataType == gdal.GDT_Float64
+    ds = None
+
