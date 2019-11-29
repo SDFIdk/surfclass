@@ -88,4 +88,3 @@ def test_cli_prepare_extractfeatures(cli_runner, amplituderaster_filepath, tmp_p
     band = ds.GetRasterBand(1)
     assert band.DataType == gdal.GDT_Float64
     ds = None
-
