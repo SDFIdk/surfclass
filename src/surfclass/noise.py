@@ -57,3 +57,19 @@ def majority_vote(a, iterations=1, structure=np.ones((3, 3))):
     for _ in range(iterations):
         a = rank.windowed_histogram(a, structure).argmax(axis=-1).astype("uint8")
     return np.ma.masked_values(a, nodata) if not nodata is None else a
+
+
+def denoise(a):
+    """Applies simple denoising to a classified raster
+
+    Denoising removes small clusters and fills nodata areas.
+
+    Args:
+        a (MaskedArray): 2D MaskedArray with 'uint8' type
+
+    Returns:
+        ndarray: Denoised data
+    """
+    a = majority_vote(a, 2)
+    a = fill_nearest_neighbor(a)
+    return majority_vote(a, 1).data
