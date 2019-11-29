@@ -98,15 +98,27 @@ class KernelFeatureExtraction:
         if "mean" in self.outputfeatures:
             features.append(
                 np.ma.masked_array(
-                    np.ma.mean(masked_values, axis=2), mask=mask[crop_indices]
+                    np.ma.mean(masked_values, axis=2), mask=mask[tuple(crop_indices)]
                 )
             )
             feature_names.append("mean")
 
+        if "diffmean" in self.outputfeatures:
+            features.append(
+                np.ma.masked_array(
+                    (
+                        self.array[tuple(crop_indices)]
+                        - np.ma.mean(masked_values, axis=2)
+                    ),
+                    mask=mask[tuple(crop_indices)],
+                )
+            )
+            feature_names.append("diffmean")
+
         if "var" in self.outputfeatures:
             features.append(
                 np.ma.masked_array(
-                    np.ma.var(masked_values, axis=2), mask=mask[crop_indices]
+                    np.ma.var(masked_values, axis=2), mask=mask[tuple(crop_indices)]
                 )
             )
             feature_names.append("var")
