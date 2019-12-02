@@ -6,3 +6,4 @@ dependencies:
   - gdal=3.*
   - python-pdal=2.*
   - pip
+  - scikit-learn=0.21.3
