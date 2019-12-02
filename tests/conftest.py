@@ -33,3 +33,8 @@ def polygons_filepath(data_dir):
 @pytest.fixture(scope="session")
 def amplituderaster_filepath(data_dir):
     return Path(data_dir) / "1km_6171_727_amplitude_4m.tif"
+
+
+@pytest.fixture(scope="session")
+def testmodel1_filepath(data_dir):
+    return Path(data_dir).joinpath("classification_data/testmodel1.sav")
