@@ -29,4 +29,3 @@ def test_cli_classify_testmodel1(cli_runner, testmodel1_filepath, data_dir, tmp_
     assert ds.GetGeoTransform() == (727000, 4, 0, 6172000, 0, -4)
 
     # TODO: Test that the actual classification gives expected result
-
