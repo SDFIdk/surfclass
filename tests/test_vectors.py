@@ -2,11 +2,11 @@ from osgeo import ogr, osr
 import numpy as np
 from surfclass import Bbox
 from surfclass.vectorize import (
-    MaskedRasterReader,
     FeatureReader,
     ClassCounter,
     open_or_create_similar_layer,
 )
+from surfclass.rasterreader import MaskedRasterReader
 
 
 def test_featurereader(polygons_filepath):
