@@ -16,7 +16,8 @@ def write_to_file(filename, array, origin, resolution, epsg_code, nodata=None):
     ds.SetGeoTransform((originX, resolution, 0, originY, 0, -1 * resolution))
     band = ds.GetRasterBand(1)
 
-    if not nodata is None:
+    # TODO Handle the case where nodata is none (best guess to avoid removing information)
+    if nodata is not None:
         band.SetNoDataValue(nodata)
         if isinstance(array, np.ma.MaskedArray):
             array = array.filled(fill_value=nodata)

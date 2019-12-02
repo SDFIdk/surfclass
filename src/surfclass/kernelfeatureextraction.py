@@ -73,8 +73,6 @@ class KernelFeatureExtraction:
 
     def calculate_derived_features(self):
 
-        features = []
-        feature_names = []
         windows = self.matrix_as_windows(self.array, self.neighborhood, self.crop_mode)
 
         if self.nodata is not None:
@@ -95,44 +93,32 @@ class KernelFeatureExtraction:
             slice(edge_size, self.array.shape[1] - edge_size),
         ]
 
-        if "mean" in self.outputfeatures:
-            features.append(
-                np.ma.masked_array(
-                    np.ma.mean(masked_values, axis=2), mask=mask[tuple(crop_indices)]
-                )
-            )
-            feature_names.append("mean")
+        for feat_name in self.outputfeatures:
 
-        if "diffmean" in self.outputfeatures:
-            features.append(
-                np.ma.masked_array(
+            if feat_name == "mean":
+                yield np.ma.masked_array(
+                    np.ma.mean(masked_values, axis=2), mask=mask[tuple(crop_indices)]
+                ), feat_name
+
+            if feat_name == "diffmean":
+                yield np.ma.masked_array(
                     (
                         self.array[tuple(crop_indices)]
                         - np.ma.mean(masked_values, axis=2)
                     ),
                     mask=mask[tuple(crop_indices)],
-                )
-            )
-            feature_names.append("diffmean")
+                ), feat_name
 
-        if "var" in self.outputfeatures:
-            features.append(
-                np.ma.masked_array(
+            if feat_name == "var":
+                yield np.ma.masked_array(
                     np.ma.var(masked_values, axis=2), mask=mask[tuple(crop_indices)]
-                )
-            )
-            feature_names.append("var")
-
-        return (features, feature_names)
+                ), feat_name
 
     def start(self):
         """
         Calculates the derived features, mean and variance for a given neighborhood and crop_mode
         Returns list of numpy arrays
         """
-        # Read raw values out of raster, as matrix_as_windows does not worked on masked arrays
-
-        features, feature_names = self.calculate_derived_features()
 
         # Figure out the new origin based on crop_mode and neighborhood
         # If there is no crop, origin is simply UL
@@ -145,11 +131,11 @@ class KernelFeatureExtraction:
         else:
             origin = (self.bbox.xmin, self.bbox.ymax)
 
-        for idx, feature in enumerate(features):
-            outfile = self._output_filename(feature_names[idx])
+        for _, feature in enumerate(self.calculate_derived_features()):
+            outfile = self._output_filename(feature[1])
             rasterwriter.write_to_file(
                 outfile,
-                feature,
+                feature[0],  # Array
                 origin,
                 self.rasterreader.resolution,
                 25832,

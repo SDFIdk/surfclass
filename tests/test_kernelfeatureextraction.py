@@ -21,14 +21,18 @@ def test_kernelfeatureextraction(amplituderaster_filepath, tmp_path):
     assert extractor.nodata == -999.0
 
     # Calculate derived features with the "crop" method
-    derived_features, feature_names = extractor.calculate_derived_features()
+    feature_generator = extractor.calculate_derived_features()
+    derived_features, _ = zip(*list(feature_generator))
+
     assert len(derived_features) == 3
     # Since we cropped size is smaller then input.
     assert derived_features[0].shape == (246, 246)
 
     # Calculate derived features with the "reflect" method
     extractor.crop_mode = "reflect"
-    derived_features, _ = extractor.calculate_derived_features()
+    # Get a new generator
+    feature_generator = extractor.calculate_derived_features()
+    derived_features, _ = zip(*list(feature_generator))
     assert len(derived_features) == 3
     # Since we reflected output shape is equal to input shape
     assert derived_features[0].shape == (250, 250)
@@ -36,8 +40,8 @@ def test_kernelfeatureextraction(amplituderaster_filepath, tmp_path):
     # Test that mean and variance calculation in "simple cases" are correct
     # Area is picked such that no "nodata" cells are included
     assert extractor.array[110:115, 110:115].mean() == derived_features[0][112, 112]
-    assert extractor.array[110:115, 110:115].var() == derived_features[2][112, 112]
+    assert extractor.array[110:115, 110:115].var() == derived_features[1][112, 112]
 
     # Test DiffMean is correct
     diffmean = extractor.array[112, 112] - extractor.array[110:115, 110:115].mean()
-    assert diffmean == derived_features[1][112, 112]
+    assert diffmean == derived_features[2][112, 112]

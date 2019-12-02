@@ -65,12 +65,12 @@ def test_cli_prepare_lidargrid_multiple_lidarfiles(cli_runner, las_filepath, tmp
 
 
 def test_cli_prepare_extractfeatures(cli_runner, amplituderaster_filepath, tmp_path):
-    args = f"prepare extractfeatures -b 727000 6171000 728000 6172000 -f mean -f var -n 5 -c reflect {amplituderaster_filepath} {tmp_path}"
+    args = f"""prepare extractfeatures -b 727000 6171000 728000 6172000 -f mean -f var -n 5 -c reflect
+        {amplituderaster_filepath} {tmp_path}"""
 
     result = cli_runner.invoke(cli, args.split(" "), catch_exceptions=False)
     assert result.exit_code == 0
 
-    # TODO: Write more test cases
     outfile = tmp_path / "mean.tif"
     ds = gdal.Open(str(outfile))
     assert ds.GetGeoTransform() == (727000, 4, 0, 6172000, 0, -4)
