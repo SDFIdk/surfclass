@@ -54,4 +54,4 @@ def testmodel1(
     )
     logger.debug("Starting classification")
     classifier.start()
-    logger.debug("Classification done, written to: {}".format(outdir))
+    logger.debug("Classification done, written to: %s", outdir)

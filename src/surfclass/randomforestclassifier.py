@@ -2,7 +2,6 @@ from pathlib import Path
 import logging
 import pickle
 import numpy as np
-from osgeo import gdal
 from surfclass import Bbox, rasterwriter, rasterreader
 
 
@@ -82,6 +81,7 @@ class RandomForestClassifier:
         class_prediction = class_prediction.reshape(X.shape[0], X.shape[1])
 
         # TODO: Apply mask
+        # TODO: Handle no data properly
 
         # Write the output to disk
         outfile = self._output_filename("prediction")
