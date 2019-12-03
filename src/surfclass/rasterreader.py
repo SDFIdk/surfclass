@@ -1,3 +1,4 @@
+# pylint: disable=R0916
 from osgeo import gdal, ogr, osr
 import numpy as np
 from surfclass import Bbox
@@ -94,8 +95,10 @@ class RasterReader:
         be in the same spatial reference system as used for the raster georeferencing.
 
         Args:
-            window (tuple, optional): Part of raster to read expressed as a pixel window: (column, row, numcolums, numrows). Defaults to None.
-            bbox (Bbox, optional): Part of raster to read expressed in world coordinates (xmin, ymin, xmax, ymax). Defaults to None.
+            window (tuple, optional): Part of raster to read expressed as a pixel window
+                (column, row, numcolums, numrows). Defaults to None.
+            bbox (Bbox, optional): Part of raster to read expressed in world coordinates
+                (xmin, ymin, xmax, ymax). Defaults to None.
             masked (bool, optional): Return a MaskedArray masked by the raster nodatavalue. Defaults to False.
 
         Returns:
