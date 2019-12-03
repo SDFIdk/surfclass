@@ -111,7 +111,7 @@ def count(
 def denoise(classraster, output, bbox):
     """Applies denoising to a classified raster
 
-    If bbox is specified only this part of the classraster will be loaded and denoised. 
+    If bbox is specified only this part of the classraster will be loaded and denoised.
     If bbox is not specified the entire classraster is processed.
 
     CLASSRASTER is the input raster.
