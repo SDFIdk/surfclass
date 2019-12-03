@@ -15,9 +15,9 @@ def classify():
 @classify.command()
 @options.bbox_opt(required=True)
 @click.option("-f1", "--feature1", required=True, help="Amplitude")
-@click.option("-f2", "--feature2", required=True, help="Mean Amplitude n=3")
-@click.option("-f3", "--feature3", required=True, help="Var Amplitude n=3")
-@click.option("-f4", "--feature4", required=True, help="Diffmean Amplitude n=3")
+@click.option("-f2", "--feature2", required=True, help="Diffmean Amplitude n=3")
+@click.option("-f3", "--feature3", required=True, help="Mean Amplitude n=3")
+@click.option("-f4", "--feature4", required=True, help="Var Amplitude n=3")
 @click.option("--prefix", default=None, required=False, help="Output file prefix")
 @click.option("--postfix", default=None, required=False, help="Output file postfix")
 @click.argument(

@@ -15,7 +15,9 @@ class RandomForestClassifier:
     """
 
     def __init__(self, model_path, features, bbox, outdir, prefix=None, postfix=None):
-        self.model = self._load_model(model_path[0])
+        self.model = self._load_model(
+            model_path[0]
+        )  # TODO: Why is the path parameter as a tuple here?
         self.feature_paths = features
         self.outdir = outdir or ""
         self.fileprefix = prefix or ""
@@ -56,16 +58,25 @@ class RandomForestClassifier:
     def stack_features(self):
         """Stacks the features provided to the class along the 3rd axis
         Returns:
-            np.ndarray: 3D ndarray in the form (x,y,n) where n is the raster band
+            np.ma.ndarray: Masked 3D ndarray in the form (x,y,n) where n is the raster band
         """
         features = []
         for f in self.feature_paths:
             rr = rasterreader.RasterReader(f)
+            nodata = rr.nodata
+            # TODO: Replace this with check of equal geotransforms
             self.resolution = max(self.resolution, rr.resolution)
-            array = rr.read_raster(bbox=self.bbox, masked=True)
-            features.append(array)
+            array = rr.read_raster(bbox=self.bbox, masked=False)
+            # TODO: Continuing issue. Come up with common way to treat this
+            if nodata is not None:
+                array = np.ma.masked_values(array, nodata)
+            else:
+                array = np.ma.array(array)
 
-        stacked_features = np.dstack(features)
+            features.append(array)
+        # Not sure the np.ma.dstack() is doing what we're expecting here
+        stacked_features = np.ma.dstack(features)
+
         return stacked_features
 
     def start(self):
@@ -80,14 +91,23 @@ class RandomForestClassifier:
         # Reshape prediction to 2D
         class_prediction = class_prediction.reshape(X.shape[0], X.shape[1])
 
-        # TODO: Apply mask
-        # TODO: Handle no data properly
+        # TODO: Figure out a way to "look" through the datastack and find the common mask
+        # This solution is much too slow
+        # mask_or = np.ma.array(
+        #    [np.ma.mask_or(X.mask[:, :, 0], mask) for mask in X.mask[:, :, 1:].ravel()]
+        # )
+
+        # Hack:
+        # Take the mask of the first feature.
+        mask_or = X.mask[:, :, 0]
+
+        class_prediction = np.ma.masked_array(class_prediction, mask=mask_or)
 
         # Write the output to disk
         outfile = self._output_filename("prediction")
         rasterwriter.write_to_file(
             outfile,
-            class_prediction,
+            class_prediction.filled(fill_value=0),
             (self.bbox.xmin, self.bbox.ymax),
             self.resolution,
             25832,
