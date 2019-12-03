@@ -5,7 +5,7 @@ from surfclass.vectorize import (
     ClassCounter,
     open_or_create_similar_layer,
 )
-from surfclass.rasterreader import MaskedRasterReader
+from surfclass.rasterio import MaskedRasterReader
 
 
 def test_featurereader(polygons_filepath):

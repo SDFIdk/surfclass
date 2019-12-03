@@ -2,7 +2,7 @@ import pytest
 from osgeo import ogr, osr
 import numpy as np
 from surfclass import Bbox
-from surfclass.rasterreader import RasterReader, MaskedRasterReader
+from surfclass.rasterio import RasterReader, MaskedRasterReader
 
 
 def test_rasterreader(classraster_filepath):

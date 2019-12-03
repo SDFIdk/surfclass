@@ -1,8 +1,6 @@
 import os
 import numpy as np
-from osgeo import gdal
-from surfclass import rasterwriter
-from surfclass.rasterreader import RasterReader
+from surfclass.rasterio import RasterReader, write_to_file
 
 
 def test_writer(tmp_path):
@@ -11,7 +9,7 @@ def test_writer(tmp_path):
     resolution = 1
     epsg = 25832
     outfile = os.path.join(tmp_path, "test_writer.tif")
-    rasterwriter.write_to_file(outfile, data, origin, resolution, epsg)
+    write_to_file(outfile, data, origin, resolution, epsg)
     assert os.path.exists(outfile)
     reader = RasterReader(outfile)
     assert reader.geotransform == (
@@ -37,7 +35,7 @@ def test_writernodata(tmp_path):
     resolution = 1
     epsg = 25832
     outfile = os.path.join(tmp_path, "test_writer_nodata.tif")
-    rasterwriter.write_to_file(outfile, data, origin, resolution, epsg, nodata=0)
+    write_to_file(outfile, data, origin, resolution, epsg, nodata=0)
     assert os.path.exists(outfile)
     reader = RasterReader(outfile)
     assert reader.geotransform == (
@@ -59,7 +57,7 @@ def test_writernodata(tmp_path):
     masked = np.ma.array(data)
     masked.mask = data == 0
     outfile = os.path.join(tmp_path, "test_writer_nodata.tif")
-    rasterwriter.write_to_file(outfile, masked, origin, resolution, epsg)
+    write_to_file(outfile, masked, origin, resolution, epsg)
     assert os.path.exists(outfile)
     reader = RasterReader(outfile)
     assert reader.geotransform == (

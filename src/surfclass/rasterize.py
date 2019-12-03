@@ -2,7 +2,7 @@ import json
 import logging
 from pathlib import Path
 import pdal
-from surfclass import lidar, rasterwriter, Bbox
+from surfclass import lidar, rasterio, Bbox
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ class LidarRasterizer:
             nodata = dimension_nodata[dim]
             outfile = self._output_filename(dim)
             grid = sampler.make_grid(dim, nodata, masked=False)
-            rasterwriter.write_to_file(
+            rasterio.write_to_file(
                 outfile, grid, origin, self.resolution, 25832, nodata=nodata
             )
 
