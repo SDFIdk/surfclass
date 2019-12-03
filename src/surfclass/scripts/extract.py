@@ -1,5 +1,6 @@
 import logging
 import click
+import numpy as np
 from surfclass.scripts import options
 from surfclass.vectorize import (
     FeatureReader,
@@ -7,7 +8,9 @@ from surfclass.vectorize import (
     open_or_create_destination_datasource,
     open_or_create_similar_layer,
 )
-from surfclass.rasterreader import MaskedRasterReader
+from surfclass.rasterreader import MaskedRasterReader, RasterReader
+from surfclass.rasterwriter import write_to_file
+from surfclass import noise
 
 logger = logging.getLogger(__name__)
 
@@ -99,3 +102,29 @@ def count(
     logger.debug("Beginning counts")
     calc.process()
     logger.debug("Done counting")
+
+
+@extract.command()
+@options.bbox_opt(required=False)
+@click.argument("classraster", type=click.Path(exists=True, dir_okay=False))
+@click.argument("output", type=click.Path(exists=False, dir_okay=False))
+def denoise(classraster, output, bbox):
+    """Applies denoising to a classified raster
+
+    If bbox is specified only this part of the classraster will be loaded and denoised. 
+    If bbox is not specified the entire classraster is processed.
+
+    CLASSRASTER is the input raster.
+    The denoised output is written to OUTPUT.
+    """
+    logger.debug("Denoising %s", classraster)
+    reader = RasterReader(classraster)
+    originX, pixel_width, _, originY, _, pixel_height = reader.geotransform
+    assert np.isclose(abs(pixel_height), abs(pixel_width)), "Pixels must be square"
+    logger.debug("Reading data within bbox %s", bbox)
+    data = reader.read_raster(bbox=bbox, masked=True)
+    logger.debug("Denoising")
+    denoised = noise.denoise(data)
+    logger.debug("Writing output to %s", output)
+    write_to_file(output, denoised, (originX, originY), abs(pixel_width), reader.srs)
+    logger.debug("Done")
