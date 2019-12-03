@@ -5,7 +5,21 @@ gdal_int_options = ["TILED=YES", "COMPRESS=deflate", "PREDICTOR=2"]
 gdal_float_options = ["TILED=YES", "COMPRESS=deflate", "PREDICTOR=3"]
 
 
-def write_to_file(filename, array, origin, resolution, epsg_code, nodata=None):
+def write_to_file(filename, array, origin, resolution, srs, nodata=None):
+    """Writes a georeferenced ndarray to a geotiff file
+
+    This method uses a simple heurestic to choose output datatype. Best results are obtained when the dtype
+    of the input array is as narrow as possible. For instance use 'uint8' for values in range(135).
+
+    Args:
+        filename (str): Path to write geotiff
+        array (ndarray): 2D ndarray optionally a MaskedArray
+        origin (tuple): World coordinates of upper left corner of upper left pixel (origin_x, origin_y)
+        resolution (float): Pixel size in world coordinate units. Width and height must be equal.
+        srs (int or SpatialReference): Reference system of supplied origin coordinates. Either an EPSG
+            code specified as an int or an entire SpatialReference object.
+        nodata (number, optional): Pixel value to set as nodatavalue in output raster. Defaults to None.
+    """
     cols, rows = array.shape[1], array.shape[0]
     originX, originY = origin
     dtype = array.dtype
@@ -24,9 +38,14 @@ def write_to_file(filename, array, origin, resolution, epsg_code, nodata=None):
         if np.ma.is_masked(array):
             array = array.filled(fill_value=nodata)
 
+    if isinstance(srs, int):
+        epsg_code = srs
+        srs_obj = osr.SpatialReference()
+        srs_obj.ImportFromEPSG(epsg_code)
+    if not isinstance(srs, osr.SpatialReference):
+        raise ValueError("srs must be either EPSG code or a SpatialReference object")
+
     band.WriteArray(array)
-    srs = osr.SpatialReference()
-    srs.ImportFromEPSG(epsg_code)
     ds.SetProjection(srs.ExportToWkt())
     band.FlushCache()
     ds = None
