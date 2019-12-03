@@ -26,7 +26,13 @@ CLASSIFIERS = [
     "Programming Language :: Python :: 3.7",
     "Topic :: Scientific/Engineering :: GIS",
 ]
-INSTALL_REQUIRES = ["click", "click_plugins", "gdal>=3", "pdal>=2"]
+INSTALL_REQUIRES = [
+    "click",
+    "click_plugins",
+    "gdal>=3",
+    "pdal>=2",
+    "scikit-learn>=0.21.3",
+]
 
 EXTRAS_REQUIRE = {"dev": ["pytest", "black"]}
 ENTRY_POINTS = """
@@ -36,6 +42,7 @@ ENTRY_POINTS = """
       [surfclass.surfclass_commands]
       prepare=surfclass.scripts.prepare:prepare
       extract=surfclass.scripts.extract:extract
+      classify=surfclass.scripts.classify:classify
 """
 
 ###############################################################################

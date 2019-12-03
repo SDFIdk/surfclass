@@ -66,7 +66,7 @@ def count(
     An attribute per reported class is added. The attribute "class_n" reports the number of cells with the value n
     within the polygon and a "total_count" attribute reports the total number of cells within the polygon.
 
-    Vector operations are carreid out using the OGR library and as such datasources, layers and associated creation
+    Vector operations are carried out using the OGR library and as such datasources, layers and associated creation
     options follow the semantics specified by OGR. See https://gdal.org.
 
     Output dataset and output layer may exist beforehand in which case the tool tries to open it in append mode.
