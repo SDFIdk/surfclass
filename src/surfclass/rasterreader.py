@@ -116,9 +116,9 @@ class RasterReader:
         col, row, cols, rows = src_offset
         if (
             col < 0
-            or self.width < col
+            or self.width <= col
             or row < 0
-            or self.height < row
+            or self.height <= row
             or cols < 0
             or self.width < col + cols
             or rows < 0
