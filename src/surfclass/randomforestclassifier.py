@@ -15,9 +15,7 @@ class RandomForestClassifier:
     """
 
     def __init__(self, model_path, features, bbox, outdir, prefix=None, postfix=None):
-        self.model = self._load_model(
-            model_path[0]
-        )  # TODO: Why is the path parameter as a tuple here?
+        self.model = self._load_model(model_path)
         self.feature_paths = features
         self.outdir = outdir or ""
         self.fileprefix = prefix or ""
