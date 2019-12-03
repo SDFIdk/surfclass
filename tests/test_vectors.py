@@ -1,5 +1,4 @@
-from osgeo import ogr, osr
-import numpy as np
+from osgeo import ogr
 from surfclass import Bbox
 from surfclass.vectorize import (
     FeatureReader,
@@ -31,35 +30,6 @@ def test_featurereader(polygons_filepath):
     reader.set_bbox_filter(None)
     features = list(reader)
     assert len(features) == 83
-
-
-def test_maskedrasterreader(classraster_filepath):
-    reader = MaskedRasterReader(classraster_filepath)
-    assert reader
-    assert isinstance(reader.srs, osr.SpatialReference)
-    assert reader.bbox == Bbox(727000.0, 6171000.0, 728000.0, 6172000.0)
-    pix_win = reader.bbox_to_pixel_window(reader.bbox)
-    assert pix_win == (0, 0, 500, 500)
-    pix_win = reader.bbox_to_pixel_window(
-        Bbox(727500.0, 6171600.0, 727600.0, 6171750.0)
-    )
-    assert pix_win == (250, 125, 50, 75)
-    # Try using a point
-    pnt = ogr.Geometry(ogr.wkbPoint)
-    pnt.AddPoint(727500.0, 6171600.0)
-    pnt.AssignSpatialReference(reader.srs)
-    data = reader.read_masked(pnt)
-    np.testing.assert_array_equal(data, np.ma.empty(shape=(0, 0)))
-    # Now use a proper polygon
-    poly = pnt.Buffer(100)
-    data = reader.read_masked(poly)
-    assert data.shape == (100, 100)
-    # Check that we have a mask
-    assert int(np.sum(data.mask)) == 2140
-    # Check data without mask
-    assert int(np.sum(data.data)) == 25412
-    # Check data with mask. (Must be less than unmasked)
-    assert int(np.sum(data.compressed())) == 20432
 
 
 def test_classcounter(classraster_filepath, polygons_filepath):
