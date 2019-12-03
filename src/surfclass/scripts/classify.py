@@ -55,3 +55,6 @@ def testmodel1(
     logger.debug("Starting classification")
     classifier.start()
     logger.debug("Classification done, written to: %s", outdir)
+
+
+# TODO: Setup candidate for the production model

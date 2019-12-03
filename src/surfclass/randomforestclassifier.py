@@ -104,7 +104,7 @@ class RandomForestClassifier:
         class_prediction = np.ma.masked_array(class_prediction, mask=mask_or)
 
         # Write the output to disk
-        outfile = self._output_filename("prediction")
+        outfile = self._output_filename("classification")
         rasterwriter.write_to_file(
             outfile,
             class_prediction.filled(fill_value=0),
