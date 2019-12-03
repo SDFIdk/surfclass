@@ -40,8 +40,8 @@ def write_to_file(filename, array, origin, resolution, srs, nodata=None):
 
     if isinstance(srs, int):
         epsg_code = srs
-        srs_obj = osr.SpatialReference()
-        srs_obj.ImportFromEPSG(epsg_code)
+        srs = osr.SpatialReference()
+        srs.ImportFromEPSG(epsg_code)
     if not isinstance(srs, osr.SpatialReference):
         raise ValueError("srs must be either EPSG code or a SpatialReference object")
 
