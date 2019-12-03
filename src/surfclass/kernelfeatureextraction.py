@@ -1,7 +1,6 @@
 from pathlib import Path
 import numpy as np
-from surfclass.rasterreader import RasterReader
-from surfclass import Bbox, rasterwriter
+from surfclass import rasterio, Bbox
 
 as_strided = np.lib.stride_tricks.as_strided
 
@@ -48,7 +47,7 @@ class KernelFeatureExtraction:
         self.fileprefix = prefix or ""
         self.filepostfix = postfix or ""
         self.bbox = Bbox(*bbox)
-        self.rasterreader = RasterReader(raster_path)
+        self.rasterreader = rasterio.RasterReader(raster_path)
         self.nodata = self.rasterreader.nodata
 
         self.array = self.rasterreader.read_raster(bbox=self.bbox, masked=False)
@@ -133,7 +132,7 @@ class KernelFeatureExtraction:
 
         for _, feature in enumerate(self.calculate_derived_features()):
             outfile = self._output_filename(feature[1])
-            rasterwriter.write_to_file(
+            rasterio.write_to_file(
                 outfile,
                 feature[0],  # Array
                 origin,

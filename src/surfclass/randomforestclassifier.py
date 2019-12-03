@@ -2,7 +2,7 @@ from pathlib import Path
 import logging
 import pickle
 import numpy as np
-from surfclass import Bbox, rasterwriter, rasterreader
+from surfclass import Bbox, rasterio
 
 
 logger = logging.getLogger(__name__)
@@ -60,7 +60,7 @@ class RandomForestClassifier:
         """
         features = []
         for f in self.feature_paths:
-            rr = rasterreader.RasterReader(f)
+            rr = rasterio.RasterReader(f)
             nodata = rr.nodata
             # TODO: Replace this with check of equal geotransforms
             self.resolution = max(self.resolution, rr.resolution)
@@ -103,7 +103,7 @@ class RandomForestClassifier:
 
         # Write the output to disk
         outfile = self._output_filename("classification")
-        rasterwriter.write_to_file(
+        rasterio.write_to_file(
             outfile,
             class_prediction.filled(fill_value=0),
             (self.bbox.xmin, self.bbox.ymax),

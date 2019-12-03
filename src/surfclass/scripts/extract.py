@@ -8,9 +8,7 @@ from surfclass.vectorize import (
     open_or_create_destination_datasource,
     open_or_create_similar_layer,
 )
-from surfclass.rasterreader import MaskedRasterReader, RasterReader
-from surfclass.rasterwriter import write_to_file
-from surfclass import noise
+from surfclass import rasterio, noise
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +85,7 @@ def count(
     """
     classes = range(classrange[0], classrange[1] + 1)
 
-    raster_reader = MaskedRasterReader(classraster)
+    raster_reader = rasterio.MaskedRasterReader(classraster)
     clip_bbox = bbox or raster_reader.bbox
     vector_reader = FeatureReader(indataset, inlyr)
     logger.debug("Setting bbox to: %s using clip: %s", clip_bbox, clip)
@@ -118,7 +116,7 @@ def denoise(classraster, output, bbox):
     The denoised output is written to OUTPUT.
     """
     logger.debug("Denoising %s", classraster)
-    reader = RasterReader(classraster)
+    reader = rasterio.RasterReader(classraster)
     originX, pixel_width, _, originY, _, pixel_height = reader.geotransform
     assert np.isclose(abs(pixel_height), abs(pixel_width)), "Pixels must be square"
     logger.debug("Reading data within bbox %s", bbox)
@@ -126,5 +124,7 @@ def denoise(classraster, output, bbox):
     logger.debug("Denoising")
     denoised = noise.denoise(data)
     logger.debug("Writing output to %s", output)
-    write_to_file(output, denoised, (originX, originY), abs(pixel_width), reader.srs)
+    rasterio.write_to_file(
+        output, denoised, (originX, originY), abs(pixel_width), reader.srs
+    )
     logger.debug("Done")
