@@ -19,7 +19,10 @@ def test_cli_classify_testmodel1(cli_runner, testmodel1_filepath, tmp_path):
     f3 = classification_data_path.joinpath("6171_727_mean_n3.tif")
     f4 = classification_data_path.joinpath("6171_727_var_n3.tif")
 
-    args = f"classify testmodel1 -b 727000 6171000 728000 6172000 -f1 {f1} -f2 {f2} -f3 {f3} -f4 {f4} {testmodel1_filepath} {tmp_path}"
+    args = (
+        f"classify testmodel1 -b 727000 6171000 728000 6172000 -f1 {f1} "
+        f"-f2 {f2} -f3 {f3} -f4 {f4} {testmodel1_filepath} {tmp_path}"
+    )
     result = cli_runner.invoke(cli, args.split(" "), catch_exceptions=False)
     assert result.exit_code == 0
 
