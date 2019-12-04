@@ -72,4 +72,5 @@ def denoise(a):
     """
     a = majority_vote(a, 2)
     a = fill_nearest_neighbor(a)
-    return majority_vote(a, 1).data
+    denoised = majority_vote(a, 1)
+    return denoised.filled() if isinstance(denoised, np.ma.MaskedArray) else denoised
