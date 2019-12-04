@@ -1,3 +1,4 @@
+"""Tools for handling vector data."""
 from osgeo import gdal, ogr
 import numpy as np
 from surfclass import Bbox
@@ -8,6 +9,15 @@ class_map = {1: "xxx", 2: "yyy", 3: "zzz"}
 
 
 def bbox_to_ogr_polygon(bbox):
+    """Convert a Bbox to a `Polygon` `osgeo.ogr.Geometry`.
+
+    Args:
+        bbox (tuple): (xmin, ymin, xmax, ymax)
+
+    Returns:
+        osgeo.ogr.Geometry: Polygon
+
+    """
     xmin, ymin, xmax, ymax = bbox
     ring = ogr.Geometry(ogr.wkbLinearRing)
     ring.AddPoint(xmin, ymin)
@@ -21,7 +31,31 @@ def bbox_to_ogr_polygon(bbox):
 
 
 class ClassCounter:
+    """Counts number of cells of a given value inside each `Polygon` from a vector feature datasource.
+
+    Takes features from an input feature datasource one by one, reads the cells within this feature from
+    the `maskedrastereader` counts the number of occurences of each cell value, adds these counts as attributes
+    to the feature and writes the feature to `outputlayer`. Also adds the total number of cells within the
+    feature as an attribute.
+
+    Only values in `classes` are reported seperately.
+    """
+
     def __init__(self, featurereader, maskedrasterreader, outputlayer, classes):
+        """Inits a ClassCounter.
+
+        Note:
+            Features read from `featurereader` MUST be within the bbox of `maskedrasterreader`.
+            Consider configuring the `featurereader` to clip the features.
+
+        Args:
+            featurereader (FeatureReader): Featurereader initialized with the feature datasource.
+            maskedrasterreader (MaskedRasterReader): MaskedRasterReader initialized with the raster.
+            outputlayer (osgeo.ogr.Layer): Layer to output features with added attributes.
+            classes (list or dict): Class values to add as individual attributes. Either a list of class values
+                or a dict(int, str) which maps class values to class names.
+
+        """
         self._featurereader = featurereader
         self._rasterreader = maskedrasterreader
         self._outlyr = outputlayer
@@ -34,6 +68,7 @@ class ClassCounter:
         self._zero_counts = {x: 0 for x in self._classmap}
 
     def process(self):
+        """Start processing."""
         self._add_fields()
         vdefn = self._outlyr.GetLayerDefn()
         for f in self._featurereader:
@@ -86,26 +121,64 @@ class ClassCounter:
 
 
 class FeatureReader:
+    """Read features from a vector feature datasource.
+
+    Optionally filtering and clipping with a bbox.
+    """
+
     def __init__(self, datasource, layer=None):
+        """Init a FeatureReader.
+
+        Args:
+            datasource (str or osgeo.ogr.DataSource): An OGR datasource. Either defined by its datasource string or a
+                `osgeo.ogr.DataSource` object.
+            layer (str or osgeo.ogr.Layer, optional): Layer within the `datasource` to read from. Either a layer name,
+                an `osgeo.ogr.Layer` object or `None`. If `None` the first layer in datasource is used. Defaults to None.
+
+        Raises:
+            AssertionError: If `datasource` cannot be opened.
+            AssertionError: If `layer` cannot be opened.
+
+        """
+        #: osgeo.ogr.DataSource: DataSource object.
         self.ds = (
             datasource
             if isinstance(datasource, ogr.DataSource)
             else ogr.Open(str(datasource), gdal.GA_ReadOnly)
         )
         assert self.ds, "Could not open OGR datasource: %s" % datasource
+
+        #: osgeo.ogr.Layer: Layer object.
         self.lyr = (
             layer
             if isinstance(layer, ogr.Layer)
             else (self.ds.GetLayerByName(layer) if layer else self.ds.GetLayer(0))
         )
         assert self.lyr, "Could not open datasource layer %s" % layer
+
+        #: osgeo.ogr.FeatureDefn: Layer schema.
         self.schema = self.lyr.GetLayerDefn()
+
+        #: osgeo.osr.SpatialReference: Coordinate reference system for layer.
         self.srs = self.schema.GetGeomFieldDefn(0).srs
+
         self._clip = False
         self._bbox_filter = None
         self._clip_geom = None
 
     def set_bbox_filter(self, bbox, clip=False):
+        """Set bbox filter for read features.
+
+        Only features intersecting the bbox will be returned.
+
+        Note:
+            Resets reader.
+
+        Args:
+            bbox (Bbox): Bounding box. If set to `None` filter is removed.
+            clip (bool, optional): Clip read features to bbox. Defaults to False.
+
+        """
         self._clip = clip
         self._bbox_filter = Bbox(*bbox) if bbox else None
         if not bbox:
@@ -119,12 +192,15 @@ class FeatureReader:
         self.reset_reading()
 
     def reset_reading(self):
+        """Rewinds reader to start."""
         self.lyr.ResetReading()
 
     def __iter__(self):
+        """Iterate over the features."""
         return self
 
     def __next__(self):
+        """Next (possibly clipped) feature which satisfies the bbox filter."""
         feat = self.lyr.GetNextFeature()
         if feat is None:
             raise StopIteration
@@ -137,6 +213,22 @@ class FeatureReader:
 
 
 def open_or_create_destination_datasource(dst_ds_name, dst_format=None, dsco=None):
+    """Open an OGR DataSource for update if it exists. Otherwise create it.
+
+    Args:
+        dst_ds_name (str): DataSource string.
+        dst_format (str, optional): DataSource format as specified by OGR format string. Defaults to None.
+        dsco (list of str, optional): List of OGR DataSource creation options. Defaults to None.
+
+    Raises:
+        Exception: If output datasource exists, but cannot be opened in update mode.
+        Exception: If `dst_format` does not identify an OGR driver.
+        Exception: Datasource cannot be created.
+
+    Returns:
+        osgeo.ogr.DataSource: OGR datasource.
+
+    """
     dst_ds = ogr.Open(dst_ds_name, update=1)
     if dst_ds is None:
         dst_ds = ogr.Open(dst_ds_name)
@@ -155,6 +247,25 @@ def open_or_create_destination_datasource(dst_ds_name, dst_format=None, dsco=Non
 
 
 def open_or_create_similar_layer(src_lyr, dst_ds, dst_lyr_name=None, lco=None):
+    """Open destination vector layer if it exists. Otherwise create it as an empty copy of a source layer.
+
+    If destination layer exists it is opened and returned. No checking is done if the schema matches the
+    source layer. If the destination layer does not exist it is created with the same schema as the source layer.
+
+    Args:
+        src_lyr (osgeo.ogr.Layer): Source layer.
+        dst_ds (osgeo.ogr.DataSource): Destination datasource.
+        dst_lyr_name (str, optional): Destination layer name. Defaults to None.
+        lco (list of str, optional): List of layer creation options as. Defaults to None.
+
+    Raises:
+        Exception: `dst_lyr_name` is None and `dst_ds` has multiple layers.
+        Exception: Destination layer could not be created.
+
+    Returns:
+        osgeo.ogr.Layer: Layer.
+
+    """
     if dst_lyr_name is None:
         count = dst_ds.GetLayerCount()
         if count > 1:
@@ -181,6 +292,16 @@ def open_or_create_similar_layer(src_lyr, dst_ds, dst_lyr_name=None, lco=None):
 
 
 def copy_fields(src_lyr, dst_lyr):
+    """Copy fields from `src_layer` to `dst_layer`.
+
+    Args:
+        src_lyr (osgeo.ogr.Layer): Source layer.
+        dst_lyr (osgeo.ogr.Layer): Destination layer.
+
+    Raises:
+        Exception: If field cannot be created in `dst_layer`.
+
+    """
     layer_defn = src_lyr.GetLayerDefn()
     for idx in range(layer_defn.GetFieldCount()):
         fld_defn = layer_defn.GetFieldDefn(idx)
