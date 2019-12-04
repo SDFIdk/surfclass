@@ -41,3 +41,19 @@ def test_cli_extract_count(
     assert values == [0, 1, 0, 15, 3, 0]
     values = [out_features[59][x] for x in expected_classes]
     assert values == [151, 3, 0, 1, 18, 0]
+
+
+def test_cli_extract_denoise_help(cli_runner):
+    result = cli_runner.invoke(
+        cli, ["extract", "denoise", "--help"], catch_exceptions=False
+    )
+    assert result.exit_code == 0
+
+
+def test_cli_extract_denoise(cli_runner, classraster_filepath, tmp_path):
+    outfile = tmp_path / "denoised.tif"
+    args = f"extract denoise -b 727000 6171000 728000 6172000 {classraster_filepath} {outfile}"
+
+    result = cli_runner.invoke(cli, args.split(" "), catch_exceptions=False)
+    assert result.exit_code == 0
+    assert outfile.is_file()
