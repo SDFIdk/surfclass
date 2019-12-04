@@ -1,3 +1,4 @@
+"""Tool functions for LiDAR data."""
 import logging
 import json
 import pdal
@@ -8,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 def open_pdal_pipeline(lidar_file):
+    """Open PDAL pipeline for single LiDAR file."""
     pipeline_obj = {"pipeline": [str(lidar_file)]}
     pipeline_str = json.dumps(pipeline_obj)
     pipeline = pdal.Pipeline(pipeline_str)
@@ -17,6 +19,7 @@ def open_pdal_pipeline(lidar_file):
 
 
 def read_into_numpy(pdal_pipeline):
+    """Read PDAL pipeline into a numpy array."""
     if not isinstance(pdal_pipeline, Pipeline):
         raise TypeError("pdal_pipeline must be of type 'pdal.pipeline.Pipeline'")
     if not pdal_pipeline.arrays:
@@ -29,8 +32,29 @@ def read_into_numpy(pdal_pipeline):
 
 
 class GridSampler:
+    """Samples pointcloud points with a grid.
+
+    Given a grid with specified bounds and resolution one and only one of the input points falling within a
+    cell is selected for that cell. The selected dimension from this point is then written to the grid cell.
+
+    If the property `use_min_scanangle` is set to `True` the selected point is guaranteed to be the point with the lowest
+    absolute `ScanAngleRank`. If `use_min_scanangle` is set to `False` the point is selected based on its order in the
+    input `lidar_points` array.
+
+    """
+
     def __init__(self, lidar_points, bbox, resolution):
-        self.use_min_scanangle = True
+        """Inits a GridSampler with an array of lidar points and a grid.
+
+        If `lidar_points` have not been spatially filtered to be within `bbox` then call
+        `crop_to_bbox()` before calling `make_grid()`.
+
+        Args:
+            lidar_points (ndarray): Numpy array of lidar points as output from PDAL.
+            bbox (Bbox): Sampling grid bounding box.
+            resolution (float): Sampling grid cell size (cells are square).
+
+        """
         self._points = lidar_points
         self._bbox = bbox
         self._resolution = resolution
@@ -38,8 +62,18 @@ class GridSampler:
         self._prepared = False
         self._cell_indexes = None
 
+        #: bool: Select points with the lowest possible absolute `ScanAngleRank`.
+        self.use_min_scanangle = True
+
     def crop_to_bbox(self):
-        """Removes points falling outside the given bbox"""
+        """Removes points falling outside the grid bbox.
+
+        Disregard lidar points falling outside the sampling grid.
+
+        If input points have not been spatially filtered beforehand this method should be called before the
+        first call to `make_grid`.
+
+        """
         xmin, ymin, xmax, ymax = self._bbox
         maskx = np.logical_and(self._points["X"] >= xmin, self._points[:]["X"] < xmax)
         masky = np.logical_and(self._points["Y"] > ymin, self._points[:]["Y"] <= ymax)
@@ -78,6 +112,22 @@ class GridSampler:
         return (rows, cols)
 
     def make_grid(self, dimension, nodata=0, masked=True):
+        """Sample the specified dimension.
+
+        Args:
+            dimension (str): LiDAR dimension as specified by PDAL.
+            nodata (int, optional): Cell value to indicate nodata in the output grid. Defaults to 0.
+            masked (bool, optional): Bool indicating wether to return a MaskedArray. Defaults to True.
+
+        Raises:
+            TypeError: If `dimension` is not a str.
+            ValueError: If `dimension` is not in the whitelisted dimensions.
+            TypeError: If given `nodata` cannot be cast to the output datatype.
+
+        Returns:
+            array: 2D ndarray with sampled grid. Masked if requested.
+
+        """
         if not self._prepared:
             self._prepare()
         if not isinstance(dimension, str):
@@ -109,5 +159,7 @@ class GridSampler:
         if not masked:
             return out_grid
         logger.debug("Masking")
+        # TODO: Create mask without using a nodata value.
+        # Create a bool directly from _points where there is a point inside a given cell.
         mask = out_grid == nodata
         return np.ma.array(out_grid, mask=mask)
