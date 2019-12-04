@@ -37,7 +37,12 @@ jobs:
           source /opt/conda/etc/profile.d/conda.sh
           conda activate surfclass_dev        
           pylint --rcfile=setup.cfg src
-
+    - run:
+        name: Lint with pydocstyle
+        command: |
+          source /opt/conda/etc/profile.d/conda.sh
+          conda activate surfclass_dev        
+          pydocstyle -e
     - store_test_results:
           path: test-reports
     - store_artifacts:
