@@ -105,16 +105,19 @@ def lidargrid(lidarfile, bbox, resolution, dimension, outdir, prefix, postfix):
 def extractfeatures(
     rasterfile, bbox, neighborhood, feature, cropmode, outdir, prefix, postfix
 ):
-    r"""Extract features from a raster file
+    r"""Extract statistical features from a raster file
 
-    Extract derived features from a raster file, such as mean or variance
+    Extract derived features from a raster file, such as mean, difference of mean and variance.
+
+    Uses a window of size -n to calculate neighborhood statistics for each cell in the input raster. 
+
+    The output raster can either use the -c "crop" or -c "reflect" strategy to handle the edges. 
 
     Example:
-
     surfclass prepare extractfeatures -b 721000 6150000 722000 6151000
-        -n 5 -c reflect 1km_6150_721_amplitude.tif c:\outdir\
-
+        -n 5 -c reflect -f mean -f var 1km_6150_721_amplitude.tif c:\outdir\
     """
+    # TODO: Add more edge handling strategies
     # Log inputs
     logger.debug(
         "extractfeatures started with arguments: %s, %s, %s, %s, %s,%s, %s, %s",

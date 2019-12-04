@@ -25,6 +25,15 @@ def classify():
 def testmodel1(
     feature1, feature2, feature3, feature4, model, outdir, bbox, prefix, postfix
 ):
+    r""" TEST:
+    Create a surface classified raster using a set of input features and a trained RandomForest model.
+
+    The input features must match exactly as described and in the correct order.
+
+    Example surfclass classify randomforestndvi -b 721000 6150000 722000 6151000 -f1 1km_6150_721_Amplitude.tif
+    -f2 1km_6150_721_Amplitude_diffmean.tif -f3 1km_6150_721_Amplitude_mean.tif -f4 1km_6150_721_Amplitude_var.tif
+    testmodel1.sav c:\outdir\
+    """
     # Log inputs
     logger.debug(
         "Classification with testmodel1 started with arguments: %s, %s, %s, %s, %s, %s, %s,%s",
@@ -95,9 +104,29 @@ def randomforestndvi(
     prefix,
     postfix,
 ):
+    r"""
+    RandomForestNDVI
+
+    Create a surface classified raster using a set of input features and a trained RandomForest model.
+
+    The input features must match exactly as described and in the correct order.
+
+    Example:  surfclass classify randomforestndvi -b 721000 6150000 722000 6151000 -f1 1km_6150_721_Amplitude.tif
+                                                                     -f2 1km_6150_721_Amplitude_mean.tif
+                                                                     -f3 1km_6150_721_Amplitude_var.tif
+                                                                     -f4 1km_6150_721_NDVI.tif
+                                                                     -f5 1km_6150_721_NDVI_mean.tif
+                                                                     -f6 1km_6150_721_NDVI_var.tif
+                                                                     -f7 1km_6150_721_Pulsewidth.tif
+                                                                     -f8 1km_6150_721_Pulsewidth_mean.tif
+                                                                     -f9 1km_6150_721_Pulsewidth_var.tif
+                                                                     -f10 1km_6171_727_ReturnNumber.tif
+                                                                     A5_NDVI5_P5_R_NT400_1km_6171_727_40cm_predicted.sav
+                                                                     c:\outdir\
+    """
     # Log inputs
     logger.debug(
-        "Classification with testmodel1 started with arguments: %s, %s, %s, %s, %s, %s, %s,%s,%s, %s, %s, %s, %s, %s",
+        "Classification with randomforestndvi started with arguments: %s, %s, %s, %s, %s, %s, %s,%s,%s, %s, %s, %s, %s, %s",
         feature1,
         feature2,
         feature3,
@@ -134,6 +163,6 @@ def randomforestndvi(
         prefix=prefix,
         postfix=postfix,
     )
-    logger.debug("Starting classification")
+    logger.debug("Starting classification using model: RandomForestNDVI")
     classifier.start()
     logger.debug("Classification done, written to: %s", outdir)
