@@ -1,3 +1,4 @@
+"""Extract feature using a kernel."""
 from pathlib import Path
 import numpy as np
 from surfclass import rasterio, Bbox

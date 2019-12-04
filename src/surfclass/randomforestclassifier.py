@@ -1,3 +1,4 @@
+"""Classification using random forest."""
 from pathlib import Path
 import logging
 import pickle
