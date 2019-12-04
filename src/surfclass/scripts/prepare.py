@@ -109,9 +109,9 @@ def extractfeatures(
 
     Extract derived features from a raster file, such as mean, difference of mean and variance.
 
-    Uses a window of size -n to calculate neighborhood statistics for each cell in the input raster. 
+    Uses a window of size -n to calculate neighborhood statistics for each cell in the input raster.
 
-    The output raster can either use the -c "crop" or -c "reflect" strategy to handle the edges. 
+    The output raster can either use the -c "crop" or -c "reflect" strategy to handle the edges.
 
     Example:
     surfclass prepare extractfeatures -b 721000 6150000 722000 6151000
