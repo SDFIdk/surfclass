@@ -15,6 +15,9 @@ def prepare():
 
 @prepare.command()
 @options.bbox_opt(required=True)
+@click.option(
+    "--crs", type=int, required=True, help="EPSG code of CRS used by the lidar data."
+)
 @options.resolution_opt
 @click.option(
     "-d",
@@ -33,22 +36,23 @@ def prepare():
     nargs=-1,
 )
 @click.argument("outdir", type=click.Path(exists=False, file_okay=False), nargs=1)
-def lidargrid(lidarfile, bbox, resolution, dimension, outdir, prefix, postfix):
+def lidargrid(lidarfile, bbox, crs, resolution, dimension, outdir, prefix, postfix):
     r"""Rasterize lidar data
 
     Rasterize one or more lidar files into grid cells.
 
     Example:
 
-    surfclass prepare lidargrid -b 721000 6150000 722000 6151000 -r 0.4
+    surfclass prepare lidargrid -srs 25832 -b 721000 6150000 722000 6151000 -r 0.4
         -d Intensity -d Z 1km_6150_721.las 1km_6149_720.las c:\outdir\
 
     """
     # Log inputs
     logger.debug(
-        "lidargrids started with arguments: %s, %s, %s, %s, %s, %s, %s",
+        "lidargrids started with arguments: %s, %s, %s, %s, %s, %s, %s, %s",
         lidarfile,
         bbox,
+        crs,
         resolution,
         dimension,
         outdir,
@@ -59,7 +63,14 @@ def lidargrid(lidarfile, bbox, resolution, dimension, outdir, prefix, postfix):
     # Make sure output dir exists
     pathlib.Path(outdir).mkdir(parents=True, exist_ok=True)
     rizer = LidarRasterizer(
-        lidarfile, outdir, resolution, bbox, dimension, prefix=prefix, postfix=postfix
+        lidarfile,
+        outdir,
+        resolution,
+        bbox,
+        dimension,
+        crs,
+        prefix=prefix,
+        postfix=postfix,
     )
     logger.debug("Starting rasterisation")
     rizer.start()
