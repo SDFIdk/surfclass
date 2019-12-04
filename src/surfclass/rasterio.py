@@ -1,3 +1,4 @@
+"""IO for raster files."""
 # pylint: disable=R0916
 from osgeo import gdal, ogr, osr
 import numpy as np
@@ -8,17 +9,31 @@ gdal_float_options = ["TILED=YES", "COMPRESS=deflate", "PREDICTOR=3"]
 
 
 class RasterReader:
+    """Reads one band raster file into numpy arrays."""
+
     def __init__(self, raster_path):
+        """Create instance of RasterReader.
+
+        Args:
+            raster_path (str): Path to raster file
+
+        """
         self._ds = gdal.Open(str(raster_path), gdal.GA_ReadOnly)
         assert self._ds, "Could not open raster"
         self._band = self._ds.GetRasterBand(1)
         self._bbox = None
         self._srs = None
+        #: tuple: Raster geotransform.
         self.geotransform = self._ds.GetGeoTransform()
+        #: float: Cell size in srs units.
         self.resolution = self.geotransform[1]
+        #: float, None: Raster value indicating nodata cells.
         self.nodata = self._band.GetNoDataValue()
+        #: int: Raster width in cells.
         self.width = self._ds.RasterXSize
+        #: int: Raster height in cells.
         self.height = self._ds.RasterYSize
+        #: tuple: Raster shape (rows, columns).
         self.shape = (self.height, self.width)
 
         # Memory drivers
@@ -32,6 +47,7 @@ class RasterReader:
 
     @property
     def srs(self):
+        """SpatialReference: Spatial reference system used by the loaded raster file."""
         if self._srs is None:
             srs = osr.SpatialReference()
             srs.ImportFromWkt(self._ds.GetProjection())
@@ -40,6 +56,7 @@ class RasterReader:
 
     @property
     def bbox(self):
+        """Bbox: Bounding box of loaded raster."""
         if self._bbox is None:
             xmin = self.geotransform[0]
             ymax = self.geotransform[3]
@@ -51,7 +68,7 @@ class RasterReader:
         return self._bbox
 
     def bbox_to_pixel_window(self, bbox):
-        """Returns pixel window for a Bbox in world coordinates
+        """Returns pixel window for a Bbox in world coordinates.
 
         No checks are made regarding bbox being a subset of raster extent. Bbox coordinates MUST
         be in the same spatial reference system as used for the raster georeferencing.
@@ -61,6 +78,7 @@ class RasterReader:
 
         Returns:
             tuple: (column, row, numcolums, numrows) in pixels
+
         """
         xmin, ymin, xmax, ymax = bbox
         originX, pixel_width, _, originY, _, pixel_height = self.geotransform
@@ -73,12 +91,13 @@ class RasterReader:
         return (x1, y1, xsize, ysize)
 
     def window_geotransform(self, window):
-        """Calculates geotransform for raster subset expressed as a window
+        """Calculates geotransform for raster subset expressed as a window.
 
         Args:
             window (tuple): (column, row, numcolums, numrows) in pixels
         Returns:
             tuple: (originX, pixel_width, 0, originY, 0, pixel_height)
+
         """
         return (
             (self.geotransform[0] + (window[0] * self.geotransform[1])),
@@ -90,12 +109,11 @@ class RasterReader:
         )
 
     def read_raster(self, window=None, bbox=None, masked=False):
-        """Read (part of) raster and return as masked or raw numpy array
+        """Read (part of) raster and return as masked or raw numpy array.
 
         Reads entire raster if neither bbox nor window is given.
 
-        Bbox nad window must be subset of raster extent. Bbox coordinates MUST
-        be in the same spatial reference system as used for the raster georeferencing.
+        Bbox coordinates MUST be in the same spatial reference system as used for the raster georeferencing.
 
         Args:
             window (tuple, optional): Part of raster to read expressed as a pixel window
@@ -106,6 +124,11 @@ class RasterReader:
 
         Returns:
             ndarray: 2D ndarray (possibly masked)
+
+        Raises:
+            ValueError: If requested `bbox` or `window` is outside raster coverage.
+            ValueError: If both `bbox` and `window` are specified.
+
         """
         if bbox and window:
             raise ValueError("Only one of window and bbox can be specified")
@@ -143,10 +166,28 @@ class RasterReader:
 
 
 class MaskedRasterReader(RasterReader):
-    """Reads part of a raster defined by a polygon into a masked 2D array"""
+    """Reads part of a raster defined by a polygon into a 2D MaskedArray with a mask marking cells outside the polygon."""
 
     # TODO: rename to something with geom and refactor
     def read_masked(self, geom):
+        """Reads part of the raster into into a 2D MaskedArray with a mask marking cells outside the polygon.
+
+        This is suitable for doing analysis on cells inside a given geometry object.
+
+        Note: The mask marks cells outside the geometry. This means that cells inside the geometry are NOT masked
+            even if they are equal to the raster nodata value.
+
+        Args:
+            geom (osgeo.ogr.Geometry): OGR Geometry object
+
+        Raises:
+            TypeError: If geometry is not an `osgeo.ogr.Geometry`
+            ValueError: If bbox of the geometry is entirely or partly outside raster coverage.
+
+        Returns:
+            [numpy.ma.maskedArray]: A masked array where cells outside the geometry are masked.
+
+        """
         if not isinstance(geom, ogr.Geometry):
             raise TypeError("Must be OGR geometry")
         mem_type = geom.GetGeometryType()
@@ -182,7 +223,7 @@ class MaskedRasterReader(RasterReader):
 
 
 def write_to_file(filename, array, origin, resolution, srs, nodata=None):
-    """Writes a georeferenced ndarray to a geotiff file
+    """Writes a georeferenced ndarray to a geotiff file.
 
     This method uses a simple heurestic to choose output datatype. Best results are obtained when the dtype
     of the input array is as narrow as possible. For instance use 'uint8' for values in range(135).
@@ -191,10 +232,11 @@ def write_to_file(filename, array, origin, resolution, srs, nodata=None):
         filename (str): Path to write geotiff
         array (ndarray): 2D ndarray optionally a MaskedArray
         origin (tuple): World coordinates of upper left corner of upper left pixel (origin_x, origin_y)
-        resolution (float): Pixel size in world coordinate units. Width and height must be equal.
+        resolution (float): Pixel size in world coordinate units. Pixel width and height must be equal.
         srs (int or SpatialReference): Reference system of supplied origin coordinates. Either an EPSG
             code specified as an int or an entire SpatialReference object.
         nodata (number, optional): Pixel value to set as nodatavalue in output raster. Defaults to None.
+
     """
     cols, rows = array.shape[1], array.shape[0]
     originX, originY = origin
@@ -241,6 +283,18 @@ map_dtype_gdal = {
 
 
 def gdaltype_to_creationoptions(gdaltype):
+    """Gets GDAL creation options suitable for a GDAL datatype.
+
+    Args:
+        gdaltype (int): GDAL datatype value. For instance `osgeo.gdal.GDT_Byte`
+
+    Raises:
+        NotImplementedError: If given GDAL data type is not supported.
+
+    Returns:
+        list of str: List of GDAL creation options.
+
+    """
     if gdaltype in [
         gdal.GDT_Byte,
         gdal.GDT_Int16,
@@ -255,18 +309,28 @@ def gdaltype_to_creationoptions(gdaltype):
 
 
 def dtype_to_gdaltype(dtype):
+    """Gets a GDAL datatype which matches a numpy.dtype.
+
+    Args:
+        dtype (numpy.dtype): Numpy datatype
+
+    Returns:
+        int: GDAL datatype value.
+
+    """
     t = str(dtype)
     return map_dtype_gdal[t]
 
 
 def find_nodata_value(a):
-    """Tries to find a usable nodata value
+    """Tries to find a usable nodata value.
 
     Args:
         a (ndarray): 2D ndarray
 
     Returns:
         [number]: A number which is not present in the array and which is representable in the array datatype
+
     """
     amin, amax = np.ma.min(a), np.ma.max(a)
     t = a.dtype
