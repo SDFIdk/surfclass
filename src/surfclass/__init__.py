@@ -1,3 +1,4 @@
+"""Process LiDAR data into a surface clasified raster."""
 from collections import namedtuple
 
 __version__ = "0.0.1"
