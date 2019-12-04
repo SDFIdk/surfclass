@@ -1,3 +1,4 @@
+"""Tools for rasterization of LiDAR files."""
 import json
 import logging
 from pathlib import Path
@@ -20,6 +21,17 @@ dimension_nodata = {
 
 
 class LidarRasterizer:
+    """Rasterizes one or more dimensions from one or more LiDAR files.
+
+    The underlying LiDAR library is PDAL, so dimension names used must be compatible with PDAL.
+
+    Note:
+        For the time being the following filters are hard coded into this class:
+            - Ground points only (classification == 2)
+            -  "Pulse width" < 2.55
+
+    """
+
     def __init__(
         self,
         lidarfiles,
@@ -27,10 +39,23 @@ class LidarRasterizer:
         resolution,
         bbox,
         dimensions,
+        crs,
         prefix=None,
         postfix=None,
-        filterexp=None,
     ):
+        """Inits LidarRasterizer.
+
+        Args:
+            lidarfiles (list of str): List of paths to LiDAR files.
+            outdir (str): Path to output directory.
+            resolution (float): Cell size in coordinate system unit.
+            bbox (Bbox): Bounding box of output raster.
+            dimensions (list of str): List of LiDAR dimensions to rasterize.
+            crs (int): EPSG code of the spatial reference system for the LiDAR files.
+            prefix (str, optional): Output file(s) prefix. Defaults to None.
+            postfix (str, optional): Output file(s) postfix. Defaults to None.
+
+        """
         self.lidarfiles = (
             [lidarfiles] if isinstance(lidarfiles, (str, Path)) else list(lidarfiles)
         )
@@ -41,9 +66,20 @@ class LidarRasterizer:
         self.bbox = Bbox(*bbox)
         self.dimensions = self._validate_dimensions(dimensions)
         self.pipeline = self._create_pipeline()
-        self.filterexp = filterexp
+        self.srs = crs
 
     def start(self):
+        """Starts the processing.
+
+        Note:
+            For the time being the following filters are hard coded into this class:
+                - Ground points only (classification == 2)
+                -  "Pulse width" < 2.55
+
+        Raises:
+            Exception: If the PDAL pipeline built is not valid.
+
+        """
         # Convert the pipeline to stringified JSON (required by PDAL)
         pipeline_json = json.dumps(self.pipeline)
         pipeline = pdal.Pipeline(pipeline_json)
@@ -54,6 +90,7 @@ class LidarRasterizer:
 
         else:
             logger.error("Pipeline not valid")
+            raise Exception("Pipeline not valid.")
 
         logger.debug("Reading data")
         data = pipeline.arrays
@@ -73,7 +110,7 @@ class LidarRasterizer:
             outfile = self._output_filename(dim)
             grid = sampler.make_grid(dim, nodata, masked=False)
             rasterio.write_to_file(
-                outfile, grid, origin, self.resolution, 25832, nodata=nodata
+                outfile, grid, origin, self.resolution, self.srs, nodata=nodata
             )
 
     def _create_pipeline(self):
@@ -107,7 +144,7 @@ class LidarRasterizer:
 
     @classmethod
     def _validate_dimensions(cls, dimensions):
-        """Validates the dimensions given, against PDAL"""
+        """Validates the dimensions given, against PDAL."""
         try:
             for dim in dimensions:
                 if not (
@@ -121,43 +158,3 @@ class LidarRasterizer:
             return dimensions
         except ValueError as e:
             print("ValueError: ", e)
-
-
-def test():
-    """ Only used for internal testing """
-    resolution = 0.5  # Coarse resolution for fast testing
-
-    kvnetixes = [(6167, 729), (6171, 727), (6176, 724), (6184, 720), (6220, 717)]
-
-    for kvnetix in kvnetixes:
-        bbox = Bbox(
-            kvnetix[1] * 1000,
-            kvnetix[0] * 1000,
-            kvnetix[1] * 1000 + 1000,
-            kvnetix[0] * 1000 + 1000,
-        )
-        tile = f"1km_{kvnetix[0]}_{kvnetix[1]}"
-        lidarfile = (
-            Path(
-                "/Volumes/GoogleDrive/My Drive/Septima - Ikke synkroniseret/Projekter/SDFE/Befæstelse/data/trænings_las"
-            )
-            / f"{tile}.las"
-        )
-        outdir = ""
-        prefix = f"{tile}_"
-        dimensions = [
-            "Intensity",
-            "Amplitude",
-            "Pulse width",
-            "ReturnNumber",
-            "ScanAngleRank",
-            "PointSourceId",
-        ]
-        r = LidarRasterizer(
-            str(lidarfile), outdir, resolution, bbox, dimensions, prefix=prefix
-        )
-        r.start()
-
-
-if __name__ == "__main__":
-    test()
