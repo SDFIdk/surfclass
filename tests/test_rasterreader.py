@@ -100,3 +100,10 @@ def test_maskedrasterreader(classraster_filepath):
     assert int(np.sum(data.data)) == 25412
     # Check data with mask. (Must be less than unmasked)
     assert int(np.sum(data.compressed())) == 20432
+
+    # Test read_flattened
+    flat_data = reader.read_flattened(poly)
+    # read_masked returns a 100x100 of which 2140 are outside the poly
+    assert flat_data.shape == (100 * 100 - 2140,)
+    assert np.ma.is_masked(flat_data)
+    assert int(np.ma.sum(flat_data)) == 20432

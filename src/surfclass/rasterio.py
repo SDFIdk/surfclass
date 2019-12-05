@@ -221,6 +221,30 @@ class MaskedRasterReader(RasterReader):
         masked = np.ma.MaskedArray(src_array, mask=np.logical_not(rasterized_array))
         return masked
 
+    def read_flattened(self, geom):
+        """Read data within the geom into a 1D masked array.
+
+        Output 1D array contains all cell values within the geom. It is a MaskedArray where the mask
+        indicates cells with `nodata` value.
+
+        Args:
+            geom (osgeo.ogr.Geometry): OGR Geometry object.
+
+        Raises:
+            TypeError: If geometry is not an `osgeo.ogr.Geometry`
+            ValueError: If bbox of the geometry is entirely or partly outside raster coverage.
+
+        Returns:
+            [numpy.ma.maskedArray]: A 1D masked array where cells with `nodata` value are masked.
+
+        """
+        # mask marks cells outside geom
+        masked_subset = self.read_masked(geom)
+        # 1D array with cells inside geom only
+        flattened = masked_subset.compressed()
+        # Mark nodata cells as masked
+        return np.ma.masked_values(flattened, self.nodata)
+
 
 def write_to_file(filename, array, origin, resolution, srs, nodata=None):
     """Writes a georeferenced ndarray to a geotiff file.
