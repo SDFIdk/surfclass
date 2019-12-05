@@ -168,8 +168,7 @@ class RasterReader:
 class MaskedRasterReader(RasterReader):
     """Reads part of a raster defined by a polygon into a 2D MaskedArray with a mask marking cells outside the polygon."""
 
-    # TODO: rename to something with geom and refactor
-    def read_masked(self, geom):
+    def read_2d(self, geom):
         """Reads part of the raster into into a 2D MaskedArray with a mask marking cells outside the polygon.
 
         This is suitable for doing analysis on cells inside a given geometry object.
@@ -239,7 +238,7 @@ class MaskedRasterReader(RasterReader):
 
         """
         # mask marks cells outside geom
-        masked_subset = self.read_masked(geom)
+        masked_subset = self.read_2d(geom)
         # 1D array with cells inside geom only
         flattened = masked_subset.compressed()
         # Mark nodata cells as masked
