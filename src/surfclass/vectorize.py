@@ -113,7 +113,7 @@ class ClassCounter:
         assert field_index >= 0, "Could not create field %s" % self._total_field
 
     def _count_classes_inside(self, geom):
-        masked_data = self._rasterreader.read_masked(geom)
+        masked_data = self._rasterreader.read_2d(geom)
         # Ok, now count classes (including nodata):
         unique, counts = np.unique(masked_data.compressed(), return_counts=True)
         class_counts = dict(zip(unique, counts))

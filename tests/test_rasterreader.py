@@ -88,11 +88,11 @@ def test_maskedrasterreader(classraster_filepath):
     pnt = ogr.Geometry(ogr.wkbPoint)
     pnt.AddPoint(727500.0, 6171600.0)
     pnt.AssignSpatialReference(reader.srs)
-    data = reader.read_masked(pnt)
+    data = reader.read_2d(pnt)
     np.testing.assert_array_equal(data, np.ma.empty(shape=(0, 0)))
     # Now use a proper polygon
     poly = pnt.Buffer(100)
-    data = reader.read_masked(poly)
+    data = reader.read_2d(poly)
     assert data.shape == (100, 100)
     # Check that we have a mask
     assert int(np.sum(data.mask)) == 2140
@@ -103,7 +103,7 @@ def test_maskedrasterreader(classraster_filepath):
 
     # Test read_flattened
     flat_data = reader.read_flattened(poly)
-    # read_masked returns a 100x100 of which 2140 are outside the poly
+    # read_2d returns a 100x100 of which 2140 are outside the poly
     assert flat_data.shape == (100 * 100 - 2140,)
     assert np.ma.is_masked(flat_data)
     assert int(np.ma.sum(flat_data)) == 20432
