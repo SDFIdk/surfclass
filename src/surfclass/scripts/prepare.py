@@ -15,9 +15,7 @@ def prepare():
 
 @prepare.command()
 @options.bbox_opt(required=True)
-@click.option(
-    "--crs", type=int, required=True, help="EPSG code of CRS used by the lidar data."
-)
+@options.srs_opt
 @options.resolution_opt
 @click.option(
     "-d",
@@ -36,7 +34,7 @@ def prepare():
     nargs=-1,
 )
 @click.argument("outdir", type=click.Path(exists=False, file_okay=False), nargs=1)
-def lidargrid(lidarfile, bbox, crs, resolution, dimension, outdir, prefix, postfix):
+def lidargrid(lidarfile, bbox, srs, resolution, dimension, outdir, prefix, postfix):
     r"""Rasterize lidar data
 
     Rasterize one or more lidar files into grid cells.
@@ -52,7 +50,7 @@ def lidargrid(lidarfile, bbox, crs, resolution, dimension, outdir, prefix, postf
         "lidargrids started with arguments: %s, %s, %s, %s, %s, %s, %s, %s",
         lidarfile,
         bbox,
-        crs,
+        srs.ExportToPrettyWkt(),
         resolution,
         dimension,
         outdir,
@@ -68,7 +66,7 @@ def lidargrid(lidarfile, bbox, crs, resolution, dimension, outdir, prefix, postf
         resolution,
         bbox,
         dimension,
-        crs,
+        srs,
         prefix=prefix,
         postfix=postfix,
     )

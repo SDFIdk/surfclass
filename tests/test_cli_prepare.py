@@ -15,7 +15,7 @@ def test_cli_prepare_lidargrid_help(cli_runner):
 
 
 def test_cli_prepare_lidargrid(cli_runner, las_filepath, tmp_path):
-    args = f"prepare lidargrid --crs 25832 -b 727000 6171000 728000 6172000 -r 10 -d Z -d Intensity {las_filepath} {tmp_path}"
+    args = f"prepare lidargrid --srs epsg:25832 -b 727000 6171000 728000 6172000 -r 10 -d Z -d Intensity {las_filepath} {tmp_path}"
 
     result = cli_runner.invoke(cli, args.split(" "), catch_exceptions=False)
     assert result.exit_code == 0
@@ -40,7 +40,7 @@ def test_cli_prepare_lidargrid(cli_runner, las_filepath, tmp_path):
 
 
 def test_cli_prepare_lidargrid_multiple_lidarfiles(cli_runner, las_filepath, tmp_path):
-    args = f"prepare lidargrid --crs 25832 -b 727000 6171000 728000 6172000 -r 10 -d Z -d Intensity {las_filepath} {las_filepath} {tmp_path}"
+    args = f"prepare lidargrid --srs epsg:25832 -b 727000 6171000 728000 6172000 -r 10 -d Z -d Intensity {las_filepath} {las_filepath} {tmp_path}"
 
     result = cli_runner.invoke(cli, args.split(" "), catch_exceptions=False)
     assert result.exit_code == 0
