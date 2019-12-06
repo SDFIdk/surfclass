@@ -1,16 +1,18 @@
 import logging
 import pathlib
 import click
+from scipy import stats
 from surfclass.scripts import options
 from surfclass.rasterize import LidarRasterizer
 from surfclass.kernelfeatureextraction import KernelFeatureExtraction
+from surfclass import train
 
 logger = logging.getLogger(__name__)
 
 
 @click.group()
 def prepare():
-    """Prepare data for surfclass"""
+    """Prepare data for surfclass."""
 
 
 @prepare.command()
@@ -157,3 +159,75 @@ def extractfeatures(
     logger.debug("Starting feature extraction")
     featureextractor.start()
     logger.debug("Feature extraction done!")
+
+
+@prepare.command()
+@click.option(
+    "--in",
+    "indataset",
+    default=None,
+    required=True,
+    help="OGR dataset with draining polygons",
+)
+@click.option("--inlyr", default=None, required=False, help="Layer name")
+@click.option(
+    "--attrib",
+    "-a",
+    default=None,
+    required=True,
+    help="Name of attribute defining class (as Integer)",
+)
+@click.option(
+    "-f",
+    "--feature",
+    "rasterfiles",
+    type=click.Path(exists=True, file_okay=True, dir_okay=False),
+    multiple=True,
+    required=True,
+    help="Feature raster file. Multiple allowed. NOTE: Order is important!!!",
+)
+@click.argument("outputfile", type=click.Path(exists=False, file_okay=True), nargs=1)
+def traindata(indataset, inlyr, attrib, rasterfiles, outputfile):
+    """Extracts training data defined by polygons with a class from a set of raster features.
+
+    Example:
+    surfclass prepare traindata --in train_polys.gpkg --inlyr areas --attrib classno -f feature1.tif
+        -f feature2.tif -f feature3.tif my_traning_data.npz
+
+    """
+    # Print feature order. This is important.
+    click.echo("Extracting training data from features:")
+    for i, fp in enumerate(rasterfiles):
+        click.echo(f"f{i+1}: {fp}")
+
+    (classes, features) = train.collect_training_data(
+        indataset, inlyr, attrib, rasterfiles
+    )
+    click.echo("Stats for extracted training data:")
+    click.echo(stats.describe(classes))
+    click.echo("Stats for extracted feature data:")
+    click.echo(stats.describe(features))
+    train.save_training_data(outputfile, rasterfiles, classes, features)
+
+
+@prepare.command()
+@click.argument("datafile", type=click.Path(exists=True, file_okay=True), nargs=1)
+def traindatainfo(datafile):
+    """Shows basic information about extracted training data.
+
+    Example:
+    surclass prepare traindatainfo my_traning_data
+
+    """
+    # TODO: Beautify output like
+    # Number of observations: xxx
+    # f1: min=x max=y mean=z
+    # f2: ...
+    file_paths, classes, features = train.load_training_data(datafile)
+    click.echo("Trained from features:")
+    for i, fp in enumerate(file_paths):
+        click.echo(f"f{i+1}: {fp}")
+    click.echo("Stats for classes:")
+    click.echo(stats.describe(classes))
+    click.echo("Stats for features:")
+    click.echo(stats.describe(features))

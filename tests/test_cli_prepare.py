@@ -87,3 +87,55 @@ def test_cli_prepare_extractfeatures(cli_runner, amplituderaster_filepath, tmp_p
     band = ds.GetRasterBand(1)
     assert band.DataType == gdal.GDT_Float64
     ds = None
+
+
+def test_cli_prepare_traindata(cli_runner, polygons_filepath, data_dir, tmp_path):
+    rasters = [
+        "6171_727_amplitude.tif",
+        "6171_727_diffmean_n3.tif",
+        "6171_727_mean_n3.tif",
+    ]
+    rasters = [data_dir / "classification_data" / x for x in rasters]
+
+    args = ["prepare", "traindata"]
+    args += ["--in", str(polygons_filepath)]
+    args += ["--attrib", "id"]
+    for r in rasters:
+        args.append("-f")
+        args.append(str(r))
+    outfile = tmp_path / "test.npz"
+    args.append(str(outfile))
+
+    result = cli_runner.invoke(cli, args, catch_exceptions=False)
+    assert result.exit_code == 0
+    assert outfile.exists()
+
+
+def test_cli_prepare_traininfo(cli_runner, polygons_filepath, data_dir, tmp_path):
+    rasters = [
+        "6171_727_amplitude.tif",
+        "6171_727_diffmean_n3.tif",
+        "6171_727_mean_n3.tif",
+    ]
+    rasters = [data_dir / "classification_data" / x for x in rasters]
+
+    args = ["prepare", "traindata"]
+    args += ["--in", str(polygons_filepath)]
+    args += ["--attrib", "id"]
+    for r in rasters:
+        args.append("-f")
+        args.append(str(r))
+    outfile = tmp_path / "test.npz"
+    args.append(str(outfile))
+
+    result = cli_runner.invoke(cli, args, catch_exceptions=False)
+    assert result.exit_code == 0
+    assert outfile.exists()
+
+    result = cli_runner.invoke(
+        cli, ["prepare", "traindatainfo", str(outfile)], catch_exceptions=False
+    )
+    assert result.exit_code == 0
+    # Shows stats and feature info
+    for f in rasters:
+        assert str(f) in result.stdout, "Features not mentioned"
