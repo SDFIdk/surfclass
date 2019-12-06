@@ -39,7 +39,7 @@ class LidarRasterizer:
         resolution,
         bbox,
         dimensions,
-        crs,
+        srs,
         prefix=None,
         postfix=None,
     ):
@@ -51,7 +51,7 @@ class LidarRasterizer:
             resolution (float): Cell size in coordinate system unit.
             bbox (Bbox): Bounding box of output raster.
             dimensions (list of str): List of LiDAR dimensions to rasterize.
-            crs (int): EPSG code of the spatial reference system for the LiDAR files.
+            srs (osgeo.osr.SpatialReference): Spatial reference system for the LiDAR files.
             prefix (str, optional): Output file(s) prefix. Defaults to None.
             postfix (str, optional): Output file(s) postfix. Defaults to None.
 
@@ -66,7 +66,7 @@ class LidarRasterizer:
         self.bbox = Bbox(*bbox)
         self.dimensions = self._validate_dimensions(dimensions)
         self.pipeline = self._create_pipeline()
-        self.srs = crs
+        self.srs = srs
 
     def start(self):
         """Starts the processing.

@@ -1,6 +1,8 @@
 # pylint: disable=W0613
+from osgeo import osr
 import click
 from surfclass import Bbox
+
 
 verbosity_arg = click.option(
     "--verbosity",
@@ -45,4 +47,24 @@ resolution_opt = click.option(
     required=True,
     callback=resolution_handler,
     help="Grid cell size",
+)
+
+
+def srs_handler(ctx, param, value):
+    out_srs = osr.SpatialReference()
+    out_srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
+    if out_srs.SetFromUserInput(value) != 0:
+        raise ValueError("Failed to process SRS definition: %s" % value)
+    return out_srs
+
+
+srs_opt = click.option(
+    "--srs",
+    type=str,
+    required=True,
+    callback=srs_handler,
+    help=(
+        "Spatial reference system. Can be a full WKT definition (hard to escape properly),"
+        " or a well known definition (i.e. EPSG:4326) or a file with a WKT definition."
+    ),
 )
