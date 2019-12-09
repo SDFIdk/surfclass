@@ -4,8 +4,8 @@ from osgeo import gdal, ogr, osr
 import numpy as np
 from surfclass import Bbox
 
-gdal_int_options = ["TILED=YES", "COMPRESS=deflate", "PREDICTOR=2"]
-gdal_float_options = ["TILED=YES", "COMPRESS=deflate", "PREDICTOR=3"]
+gdal_int_options = ["TILED=YES", "COMPRESS=deflate"]
+gdal_float_options = ["TILED=YES", "COMPRESS=deflate"]
 
 
 class RasterReader:
