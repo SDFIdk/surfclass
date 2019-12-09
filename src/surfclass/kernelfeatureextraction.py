@@ -231,6 +231,6 @@ class KernelFeatureExtraction:
                 feature[0],  # Array
                 origin,
                 self.rasterreader.resolution,
-                25832,
+                self.rasterreader.srs,
                 nodata=self.nodata,
             )

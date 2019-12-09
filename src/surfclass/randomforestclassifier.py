@@ -39,7 +39,9 @@ class RandomForestClassifier:
         # np.ma.array: Stacked array of features
         self.datastack = None
         # float: Resolution used when writing to raster.
-        self.resolution = 0.00001
+        self.resolution = None
+        # osr.SpatialReference(): Spatial reference system
+        self.srs = None
 
     @staticmethod
     def _load_model(model_path):
@@ -80,12 +82,23 @@ class RandomForestClassifier:
 
         """
         features = []
+        _tmp_geotransform = None
         for f in self.feature_paths:
             rr = rasterio.RasterReader(f)
             nodata = rr.nodata
-            # TODO: Replace this with check of equal geotransforms
-            self.resolution = max(self.resolution, rr.resolution)
+            geotransform = rr.geotransform
+
+            if _tmp_geotransform is None:
+                _tmp_geotransform = geotransform
+                self.resolution = rr.resolution
+                self.srs = rr.srs
+
+            assert (
+                _tmp_geotransform == geotransform
+            ), "Features does not stack, incompatible geotransformations"
+
             array = rr.read_raster(bbox=self.bbox, masked=False)
+
             # TODO: Continuing issue. Come up with common way to treat this
             if nodata is not None:
                 array = np.ma.masked_values(array, nodata)
@@ -132,6 +145,6 @@ class RandomForestClassifier:
             class_prediction.filled(fill_value=0),
             (self.bbox.xmin, self.bbox.ymax),
             self.resolution,
-            25832,
+            self.srs,
             nodata=0,
         )
