@@ -36,7 +36,7 @@ def process_lidar_tile(t):
     args += [las_dir / (kvnet + ".las")]
     args += [out_dir]
     print("Running: ", args)
-    # subprocess.run(args, check=True)
+    subprocess.run(args, check=True)
 
 
 print("Grid lidar files")
@@ -55,7 +55,7 @@ for d in dimensions:
     args += ["%s/%s.vrt" % (out_dir, d)]  # Output vrt
     args += ["%s/*_%s.tif" % (out_dir, d)]  # Input files
     print("Running: ", args)
-    # subprocess.Popen(" ".join(args), shell=True).wait()
+    subprocess.Popen(" ".join(args), shell=True).wait()
 
 
 def process_derived(t):
@@ -71,10 +71,11 @@ def process_derived(t):
         args += ["--prefix", "%s_%s_" % (kvnet, d)]
         args += ["-f", "mean"]
         args += ["-f", "var"]
+        args += ["-f", "diffmean"]
         args += ["%s/%s.vrt" % (out_dir.resolve(), d)]
         args += [out_dir]
         print("Running: ", args)
-        # subprocess.run(args, check=True)
+        subprocess.run(args, check=True)
 
 
 print("Calculate derived features")
@@ -83,7 +84,7 @@ for t in tiles:
 
 print("Make GDAL vrts for derived features")
 for d in ("Amplitude", "Pulsewidth"):
-    for m in ("mean", "var"):
+    for m in ("mean", "var", "diffmean"):
         args = ["gdalbuildvrt"]
         args += ["-resolution", "user"]
         # Cover entire DK + margin
@@ -93,7 +94,7 @@ for d in ("Amplitude", "Pulsewidth"):
         args += ["%s/%s_%s.vrt" % (out_dir, d, m)]  # Output vrt
         args += ["%s/*_%s_%s.tif" % (out_dir, d, m)]  # Input files
         print("Running: ", args)
-        # subprocess.Popen(" ".join(args), shell=True).wait()
+        subprocess.Popen(" ".join(args), shell=True).wait()
 
 print("Process NDVI")
 for t in tiles:
@@ -107,7 +108,7 @@ for t in tiles:
     args += ["-tr", "0.4", "0.4"]
     args += [srcfile, tmpfile]
     print("Running: ", args)
-    # subprocess.run(args, check=True)
+    subprocess.run(args, check=True)
     # Calculate ndvi
     args = ["gdal_calc.py"]
     args += ["-A", tmpfile, "--A_band=4"]
@@ -118,8 +119,8 @@ for t in tiles:
     args += ["--calc", "(A.astype(float)-B)/(A.astype(float)+B)"]
     args += ["--outfile", dstfile]
     print("Running: ", args)
-    # subprocess.run(args, check=True)
-    # tmpfile.unlink()
+    subprocess.run(args, check=True)
+    tmpfile.unlink()
 
 print("Make GDAL vrts for NDVI")
 args = ["gdalbuildvrt"]
@@ -131,7 +132,7 @@ args += ["-te", "440000", "6048000", "895000", "6404000"]
 args += [str(out_dir / "ndvi.vrt")]  # Output vrt
 args += [str(out_dir / "2019_1km_*_ndvi.tif")]  # Input files
 print("Running: ", args)
-# subprocess.Popen(" ".join(args), shell=True).wait()
+subprocess.Popen(" ".join(args), shell=True).wait()
 
 print("Run classification")
 print("...not implemented yet...")
