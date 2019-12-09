@@ -106,8 +106,8 @@ class GridSampler:
         xmin, ymin, xmax, ymax = self._bbox
         dx, dy = np.abs(xmax - xmin), np.abs(ymax - ymin)
         rows, cols = (
-            np.int(np.ceil(dy / self._resolution)),
-            np.int(np.ceil(dx / self._resolution)),
+            np.int(np.round(dy / self._resolution)),
+            np.int(np.round(dx / self._resolution)),
         )
         return (rows, cols)
 
