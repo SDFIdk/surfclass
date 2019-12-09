@@ -3,9 +3,11 @@ channels:
   - conda-forge
 dependencies:
   - python=3.7
+  - click>=6.0
+  - click-plugins>=1.0.0
   - gdal=3.*
   - python-pdal=2.*
-  - scikit-learn>=0.21.3
+  - scikit-learn=0.21.*
   - scipy
   - scikit-image
   - black

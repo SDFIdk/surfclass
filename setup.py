@@ -32,7 +32,7 @@ INSTALL_REQUIRES = [
     "click_plugins",
     "gdal>=3",
     "pdal>=2",
-    "scikit-learn>=0.21.3",
+    "scikit-learn==0.21.*",
     "scipy",
     "scikit-image",
 ]
