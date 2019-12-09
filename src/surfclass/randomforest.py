@@ -47,7 +47,10 @@ class RandomForest:
 
         elif isinstance(model, RandomForestClassifier):
             # Validate model based on parameters
+
             return self.validate_model(model)
+
+        return None
 
     def validate_model(self, model):
         """Validate a model with the current class instantiation.
@@ -119,7 +122,7 @@ class RandomForest:
         # ), "Number of classes in class observation does not match model parameter."
 
         # Define the options for the RandomForestClassifier
-        if logger.level < 30 and logger.level is not 0:  # INFO, DEBUG
+        if logger.level < 30 and logger.level != 0:  # INFO, DEBUG
             verbose = 1
         else:
             verbose = 0
