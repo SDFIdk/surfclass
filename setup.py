@@ -46,6 +46,7 @@ ENTRY_POINTS = """
       prepare=surfclass.scripts.prepare:prepare
       extract=surfclass.scripts.extract:extract
       classify=surfclass.scripts.classify:classify
+      train=surfclass.scripts.train:train
 """
 
 ###############################################################################
