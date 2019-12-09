@@ -41,7 +41,7 @@ def lidargrid(lidarfile, bbox, srs, resolution, dimension, outdir, prefix, postf
 
     Example:
 
-    surfclass prepare lidargrid -srs 25832 -b 721000 6150000 722000 6151000 -r 0.4
+    surfclass prepare lidargrid -srs epsg:25832 -b 721000 6150000 722000 6151000 -r 0.4
         -d Intensity -d Z 1km_6150_721.las 1km_6149_720.las c:\outdir\
 
     """
