@@ -54,6 +54,7 @@ for d in ["Amplitude", "Pulsewidth"]:
     args += ["--prefix", "%s_%s_" % (tile_kvnet, d)]
     args += ["-f", "mean"]
     args += ["-f", "var"]
+    args += ["-f", "diffmean"]
     args += ["%s/%s_%s.tif" % (out_dir, tile_kvnet, d)]
     args += [out_dir]
     print("Running: ", args)
