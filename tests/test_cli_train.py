@@ -1,4 +1,5 @@
-from osgeo import gdal
+import pickle
+from surfclass.train import load_training_data
 from surfclass.scripts.cli import cli
 
 
@@ -8,12 +9,17 @@ def test_cli_train(cli_runner):
 
 
 def test_cli_train_testmodel1(cli_runner, tmp_path, testmodel1_traindata_filepath):
-    args = f"train testmodel1 {testmodel1_traindata_filepath} {tmp_path}/tmp_model.sav"
+    outfile = tmp_path / "tmp_model.sav"
+    args = f"train testmodel1 {testmodel1_traindata_filepath} {outfile}"
     result = cli_runner.invoke(cli, args.split(" "), catch_exceptions=False)
     assert result.exit_code == 0
 
     # Check the file exists
+    assert outfile.is_file()
+    # Sanity check, load the model and predict some sample data
+    loaded_model = pickle.load(open(outfile, "rb"))
+    (_, classes, features) = load_training_data(testmodel1_traindata_filepath)
+    result = loaded_model.predict(features)
 
-    # Try calling predict using the model with the same data (use the testmodel1_traindata)
-
+    assert result.shape[0] == features.shape[0] == classes.shape[0]
     # sanity checks

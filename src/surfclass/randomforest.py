@@ -121,15 +121,10 @@ class RandomForest:
         #    len(np.unique(y)) == self.num_classes
         # ), "Number of classes in class observation does not match model parameter."
 
-        # Define the options for the RandomForestClassifier
-        if logger.level < 30 and logger.level != 0:  # INFO, DEBUG
-            verbose = 1
-        else:
-            verbose = 0
         # TODO: sklearn uses print() for all logging, see: https://github.com/scikit-learn/scikit-learn/issues/78
         # getting the output into the correct logging class is troublesome.
         rf = RandomForestClassifier(
-            n_estimators=self.num_trees, oob_score=True, verbose=verbose, n_jobs=-1
+            n_estimators=self.num_trees, oob_score=False, verbose=0, n_jobs=-1
         )
 
         # fit the model
