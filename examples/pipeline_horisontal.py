@@ -144,3 +144,24 @@ subprocess.Popen(" ".join(args), shell=True).wait()
 
 print("Run classification")
 print("...not implemented yet...")
+
+
+print("Denoise")
+for t in tiles:
+    kvnet = "1km_%s_%s" % t
+    srcfile = ""
+    dstfile = ""
+
+print("Burn buildings and lakes")
+for t in tiles:
+    kvnet = "1km_%s_%s" % t
+    dstfile = "xxx"
+    for classid, layername in [(8, "BYGNING"), (9, "SOE")]:
+        args = ["gdal_rasterize"]
+        args += ["-burn", str(classid)]
+        args += ["-l", layername]
+        args += [
+            "https://services.kortforsyningen.dk/service?servicename=fot2007_nohistory_gml212&token=e783865388cab694299da1ae82ee20bc"
+        ]
+        args += [dstfile]
+
