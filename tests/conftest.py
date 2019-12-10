@@ -38,3 +38,8 @@ def amplituderaster_filepath(data_dir):
 @pytest.fixture(scope="session")
 def testmodel1_filepath(data_dir):
     return Path(data_dir).joinpath("classification_data/testmodel1.sav")
+
+
+@pytest.fixture(scope="session")
+def testmodel1_traindata_filepath(data_dir):
+    return Path(data_dir).joinpath("classification_data/testmodel1_train.npz")

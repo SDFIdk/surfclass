@@ -1,8 +1,11 @@
 import logging
 import pathlib
 import click
+import numpy as np
 from surfclass.scripts import options
-from surfclass.randomforestclassifier import RandomForestClassifier
+from surfclass.randomforest import RandomForest
+from surfclass.classify import stack_rasters
+from surfclass.rasterio import write_to_file
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +39,7 @@ def testmodel1(
     """
     # Log inputs
     logger.debug(
-        "Classification with testmodel1 started with arguments: %s, %s, %s, %s, %s, %s, %s,%s",
+        "Classification with testmodel1 started with arguments: %s, %s, %s, %s, %s, %s, %s, %s",
         feature1,
         feature2,
         feature3,
@@ -46,19 +49,37 @@ def testmodel1(
         prefix,
         postfix,
     )
+    filename = "classification"
+    fileprefix = prefix or ""
+    filepostfix = postfix or ""
     # Make sure output dir exists
     pathlib.Path(outdir).mkdir(parents=True, exist_ok=True)
-    classifier = RandomForestClassifier(
-        model,
-        [feature1, feature2, feature3, feature4],
-        bbox,
-        outdir,
-        prefix=prefix,
-        postfix=postfix,
-    )
+
+    # Read the input rasters and stack them into an np.ndarray
+    features = [feature1, feature2, feature3, feature4]
+    (X, mask, geotransform, srs, _shape) = stack_rasters(features, bbox)
+    indices = np.where(mask)[0]
+    # Instantiate the RandomForest model
+    classifier = RandomForest(len(features), num_trees=50, model=model)
+
+    # Classify X using the instantiated RandomForest model
     logger.debug("Starting classification")
-    classifier.start()
-    logger.debug("Classification done, written to: %s", outdir)
+    class_prediction = classifier.classify(X)
+    logger.debug("Finished classification")
+
+    output = np.zeros(mask.shape[0])
+
+    # Convert to byte array to save space
+    output[indices] = np.int8(class_prediction)
+    output = output.reshape(_shape)
+    name = f"{fileprefix}{filename}{filepostfix}.tif"
+    outpath = str(pathlib.Path(outdir) / name)
+
+    # Get origin and resolution from geotransform
+    origin = (geotransform[0], geotransform[3])
+    resolution = geotransform[1]
+    logger.debug("Writing classification output here: %s", outpath)
+    write_to_file(outpath, output, origin, resolution, srs, nodata=0)
 
 
 @classify.command()
@@ -142,27 +163,46 @@ def randomforestndvi(
         prefix,
         postfix,
     )
+
+    filename = "classification"
+    fileprefix = prefix or ""
+    filepostfix = postfix or ""
     # Make sure output dir exists
     pathlib.Path(outdir).mkdir(parents=True, exist_ok=True)
-    classifier = RandomForestClassifier(
-        model,
-        [
-            feature1,
-            feature2,
-            feature3,
-            feature4,
-            feature5,
-            feature6,
-            feature7,
-            feature8,
-            feature9,
-            feature10,
-        ],
-        bbox,
-        outdir,
-        prefix=prefix,
-        postfix=postfix,
-    )
-    logger.debug("Starting classification using model: RandomForestNDVI")
-    classifier.start()
-    logger.debug("Classification done, written to: %s", outdir)
+
+    # Read the input rasters and stack them into an np.ndarray
+    features = [
+        feature1,
+        feature2,
+        feature3,
+        feature4,
+        feature5,
+        feature6,
+        feature7,
+        feature8,
+        feature9,
+        feature10,
+    ]
+    (X, mask, geotransform, srs, _shape) = stack_rasters(features, bbox)
+    indices = np.where(mask)[0]
+    # Instantiate the RandomForest model
+    classifier = RandomForest(len(features), num_trees=50, model=model)
+
+    # Classify X using the instantiated RandomForest model
+    logger.debug("Starting classification")
+    class_prediction = classifier.classify(X)
+    logger.debug("Finished classification")
+
+    output = np.zeros(mask.shape[0])
+
+    # Convert to byte array to save space
+    output[indices] = np.int8(class_prediction)
+    output = output.reshape(_shape)
+    name = f"{fileprefix}{filename}{filepostfix}.tif"
+    outpath = str(pathlib.Path(outdir) / name)
+
+    # Get origin and resolution from geotransform
+    origin = (geotransform[0], geotransform[3])
+    resolution = geotransform[1]
+    logger.debug("Writing classification output here: %s", outpath)
+    write_to_file(outpath, output, origin, resolution, srs, nodata=0)
