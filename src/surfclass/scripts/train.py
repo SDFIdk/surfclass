@@ -54,6 +54,7 @@ def testmodel1(trainingdata, outputfile, numtrees):
     )
 
 
+@train.command()
 @click.option(
     "-n",
     "--numtrees",
