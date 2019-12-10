@@ -1,5 +1,6 @@
 import subprocess
 from pathlib import Path
+import shutil
 
 # In lidar dir we have sixteen 1km tiles in a 4km x 4km block
 # Eastings 722, 723, 724, 725
@@ -33,7 +34,7 @@ def process_lidar_tile(t):
     args += ["--srs", "epsg:25832"]
     args += ["-r", "0.4"]
     args += ["--bbox"] + [str(x) for x in bbox]
-    for d in dimensions:
+    for d in ["Amplitude", "Pulse width", "ReturnNumber"]:
         args += ["-d", d]
     args += ["--prefix", "%s_" % kvnet]
     args += [las_dir / (kvnet + ".las")]
@@ -148,14 +149,43 @@ print("...not implemented yet...")
 
 print("Denoise")
 for t in tiles:
-    kvnet = "1km_%s_%s" % t
-    srcfile = ""
-    dstfile = ""
+    n, e = t
+    kvnet = "1km_%s_%s" % (n, e)
+    bbox = (e * 1000, n * 1000, e * 1000 + 1000, n * 1000 + 1000)
+    # Add buffer to reduce nearest neighbor artefacts
+    bbox_buffer = (bbox[0] - 20, bbox[1] - 20, bbox[2] + 20, bbox[3] + 20)
+    srcfile = out_dir / ("%s_classified.tif" % kvnet)
+    tmpfile = out_dir / ("tmp_%s_classified_denoised.tif" % kvnet)
+    dstfile = out_dir / ("%s_classified_denoised.tif" % kvnet)
+    if dstfile.exists():
+        print("%s exists. Skipping" % dstfile)
+        continue
+    args = ["surfclass", "extract", "denoise"]
+    args += ["--bbox"] + [str(x) for x in bbox_buffer]
+    args += [srcfile, tmpfile]
+    print("Running: ", args)
+    subprocess.run(args, check=True)
+    # Crop away edges
+    args = ["gdal_translate"]
+    args += ["-co", "tiled=true"]
+    args += ["-co", "compress=deflate"]
+    args += ["-projwin"] + +[str(x) for x in bbox]
+    args += [tmpfile]
+    args += [dstfile]
+    print("Running: ", args)
+    subprocess.run(args, check=True)
+    tmpfile.unlink()
+
 
 print("Burn buildings and lakes")
 for t in tiles:
     kvnet = "1km_%s_%s" % t
-    dstfile = "xxx"
+    srcfile = out_dir / ("%s_classified_denoised.tif" % kvnet)
+    dstfile = out_dir / ("%s_classified_denoised_burn.tif" % kvnet)
+    if dstfile.exists():
+        print("%s exists. Skipping" % dstfile)
+        continue
+    shutil.copy(srcfile, dstfile)
     for classid, layername in [(8, "BYGNING"), (9, "SOE")]:
         args = ["gdal_rasterize"]
         args += ["-burn", str(classid)]
@@ -164,4 +194,6 @@ for t in tiles:
             "https://services.kortforsyningen.dk/service?servicename=fot2007_nohistory_gml212&token=e783865388cab694299da1ae82ee20bc"
         ]
         args += [dstfile]
+        print("Running: ", args)
+        subprocess.run(args, check=True)
 
