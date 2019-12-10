@@ -25,6 +25,9 @@ dimensions = ["Amplitude", "Pulsewidth", "ReturnNumber"]
 def process_lidar_tile(t):
     n, e = t
     kvnet = "1km_%s_%s" % (n, e)
+    if (out_dir / ("%s_Amplitude.tif" % kvnet)).exists():
+        print("Existing grids found for %s. Skipping" % kvnet)
+        return
     bbox = (e * 1000, n * 1000, e * 1000 + 1000, n * 1000 + 1000)
     args = ["surfclass", "prepare", "lidargrid"]
     args += ["--srs", "epsg:25832"]
@@ -42,7 +45,6 @@ def process_lidar_tile(t):
 print("Grid lidar files")
 for t in tiles:
     process_lidar_tile(t)
-    pass
 
 print("Make GDAL vrts")
 for d in dimensions:
@@ -64,6 +66,9 @@ def process_derived(t):
     # Caculate bbox including edge for kernel
     bbox = (e * 1000 - 0.8, n * 1000 - 0.8, e * 1000 + 1000.8, n * 1000 + 1000.8)
     for d in ["Amplitude", "Pulsewidth"]:
+        if (out_dir / ("%s_%s_mean.tif" % (kvnet, d))).exists():
+            print("Existing derived features found for %s_%s. Skipping" % (kvnet, d))
+            continue
         args = ["surfclass", "prepare", "extractfeatures"]
         args += ["--bbox"] + [str(x) for x in bbox]
         args += ["-n", "5"]
@@ -102,6 +107,9 @@ for t in tiles:
     srcfile = orto_dir / ("2019_%s.tif" % kvnet)
     tmpfile = out_dir / ("tmp_%s.tif" % kvnet)
     dstfile = out_dir / ("2019_%s_ndvi.tif" % kvnet)
+    if dstfile.exists():
+        print("Existing NDVI found for %s. Skipping" % kvnet)
+        continue
     # Resample to 0.4m
     args = ["gdal_translate"]
     args += ["-co", "tiled=yes", "-co", "compress=deflate"]
