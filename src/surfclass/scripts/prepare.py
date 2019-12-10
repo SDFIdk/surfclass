@@ -127,7 +127,7 @@ def extractfeatures(
     Example:
     surfclass prepare extractfeatures -b 721000 6150000 722000 6151000
         -n 5 -c reflect -f mean -f var 1km_6150_721_amplitude.tif c:\outdir\
-            
+
     """
     # TODO: Add more edge handling strategies
     # Log inputs
