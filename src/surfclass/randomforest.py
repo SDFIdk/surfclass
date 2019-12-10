@@ -19,7 +19,6 @@ class RandomForest:
             model ([type], optional): [description]. Defaults to None.
 
         """
-        # self.num_classes = num_classes
         self.num_features = num_features
         self.num_trees = num_trees
         self.model = self.load_model(model)
@@ -40,6 +39,7 @@ class RandomForest:
         if isinstance(model, str):
             try:
                 model = pickle.load(open(model, "rb"))
+
                 return self.validate_model(model)
             except OSError:
                 logger.error("Could not load RandomForestModel")
@@ -154,7 +154,7 @@ class RandomForest:
         assert (
             X.ndim == 2
         ), "X does not have the correct shape, should be of form (n,f): observations 1D, and feature"
-        assert isinstance(X, np.array), "X is not a valid numpy array"
+        assert isinstance(X, np.ndarray), "X is not a valid numpy array"
         assert (
             X.shape[1] == self.num_features
         ), "Model and input does have the same number of features"

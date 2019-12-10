@@ -10,7 +10,7 @@ def test_cli_train(cli_runner):
 
 def test_cli_train_testmodel1(cli_runner, tmp_path, testmodel1_traindata_filepath):
     outfile = tmp_path / "tmp_model.sav"
-    args = f"train testmodel1 {testmodel1_traindata_filepath} {outfile}"
+    args = f"train testmodel1 -n 50 {testmodel1_traindata_filepath} {outfile}"
     result = cli_runner.invoke(cli, args.split(" "), catch_exceptions=False)
     assert result.exit_code == 0
 
