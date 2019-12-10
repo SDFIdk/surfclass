@@ -34,10 +34,10 @@ class KernelFeatureExtraction:
         self,
         raster_path,
         outdir,
-        bbox,
         outputfeatures,
         neighborhood=5,
         crop_mode="reflect",
+        bbox=None,
         prefix=None,
         postfix=None,
     ):
@@ -60,10 +60,10 @@ class KernelFeatureExtraction:
         self.fileprefix = prefix or ""
         # str, "": Optional file postfixfix
         self.filepostfix = postfix or ""
-        # surfclass.Bbox: Bounding Box (xmin,ymin,xmax,ymax)
-        self.bbox = Bbox(*bbox)
         # rasterio.RasterReader: Class for reading rasters
         self.rasterreader = rasterio.RasterReader(raster_path)
+        # surfclass.Bbox: Bounding Box (xmin,ymin,xmax,ymax)
+        self.bbox = Bbox(*bbox) if bbox else self.rasterreader.bbox
         # float: Nodata value for masking
         self.nodata = self.rasterreader.nodata
         # np.array: Non-masked array read using Raster
