@@ -78,7 +78,7 @@ def lidargrid(lidarfile, bbox, srs, resolution, dimension, outdir, prefix, postf
 
 
 @prepare.command()
-@options.bbox_opt(required=True)
+@options.bbox_opt(required=False)
 @click.option(
     "-n",
     "--neighborhood",
@@ -127,6 +127,7 @@ def extractfeatures(
     Example:
     surfclass prepare extractfeatures -b 721000 6150000 722000 6151000
         -n 5 -c reflect -f mean -f var 1km_6150_721_amplitude.tif c:\outdir\
+            
     """
     # TODO: Add more edge handling strategies
     # Log inputs
@@ -147,8 +148,8 @@ def extractfeatures(
     featureextractor = KernelFeatureExtraction(
         rasterfile,
         outdir,
-        bbox,
         feature,
+        bbox=bbox,
         neighborhood=neighborhood,
         crop_mode=cropmode,
         prefix=prefix,
