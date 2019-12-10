@@ -37,10 +37,8 @@ def stack_rasters(raster_paths, bbox=None):
         if _tmp_geotransform is None:
             _tmp_geotransform = geotransform
 
-        assert (
-            # TODO: np.almost equal cast (safer)
-            _tmp_geotransform
-            == geotransform
+        assert np.allclose(
+            _tmp_geotransform, geotransform
         ), "Features does not stack, geotransformations must be equal for all rasters"
 
         # Do not mask the raster.
