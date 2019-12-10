@@ -82,10 +82,16 @@ class RasterReader:
         """
         xmin, ymin, xmax, ymax = bbox
         originX, pixel_width, _, originY, _, pixel_height = self.geotransform
-        x1 = int((xmin - originX) / pixel_width)
-        x2 = int((xmax - originX) / pixel_width + 0.5)
-        y1 = int((ymax - originY) / pixel_height)
-        y2 = int((ymin - originY) / pixel_height + 0.5)
+        x1 = (xmin - originX) / pixel_width
+        x2 = (xmax - originX) / pixel_width
+        y1 = (ymax - originY) / pixel_height
+        y2 = (ymin - originY) / pixel_height
+        # Convert float pix indices to int pix indices same way as GDAL:
+        # https://github.com/OSGeo/gdal/blob/2df8e8105a51b47e911253a4d6bf48dab8ac5bd1/gdal/apps/gdal_translate_lib.cpp#L878-L892
+        x1 = int(x1 + 0.001)
+        y1 = int(y1 + 0.001)
+        x2 = int(x2 + 0.5)
+        y2 = int(y2 + 0.5)
         xsize = x2 - x1
         ysize = y2 - y1
         return (x1, y1, xsize, ysize)

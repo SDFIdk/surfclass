@@ -73,6 +73,26 @@ def test_rasterreader(classraster_filepath):
         )
 
 
+def test_rasterreader_bboxrounding(classraster_filepath):
+    reader = RasterReader(classraster_filepath)
+    assert reader
+    assert isinstance(reader.srs, osr.SpatialReference)
+    assert reader.bbox == Bbox(727000.0, 6171000.0, 728000.0, 6172000.0)
+    pix_win = reader.bbox_to_pixel_window(reader.bbox)
+    assert pix_win == (0, 0, 500, 500)
+    # Try bboxes which are slightly off pixel borders
+    pix_win = reader.bbox_to_pixel_window(
+        Bbox(727001.9999, 6171000, 728000.0, 6172000.0)
+    )
+    assert pix_win == (1, 0, 499, 500)
+    pix_win = reader.bbox_to_pixel_window(Bbox(727000, 6171000, 727999.99, 6171999.99))
+    assert pix_win == (0, 0, 500, 500)
+    pix_win = reader.bbox_to_pixel_window(
+        Bbox(727000, 6171000, 728000.00001, 6172000.00001)
+    )
+    assert pix_win == (0, 0, 500, 500)
+
+
 def test_maskedrasterreader(classraster_filepath):
     reader = MaskedRasterReader(classraster_filepath)
     assert reader
