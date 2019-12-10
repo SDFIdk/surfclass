@@ -11,7 +11,8 @@ def stack_rasters(raster_paths, bbox=None):
 
     Args:
         raster_paths (list of str): List of paths to feature rasters. The order is important.
-        
+        bbox (tuple): Bounding Box of form (xmin,ymin,xmax,ymax)
+
     Returns:
         np.ma.ndarray: Masked 3D ndarray in the form (x,y,n) where n is the raster band
         np.ndarray: inverted mask, used for retrieving indices of valid cells
