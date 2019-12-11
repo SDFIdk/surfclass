@@ -95,7 +95,7 @@ class RandomForest:
             sklearn.ensemble.RandomForestClassifier: A trained RandomForestClassifier model.
 
         """
-        # If a model is already defined, something is wrong
+        # If a model is already defined, something is wrong. Does not support training multiple times in a row.
         if self.model is not None:
             logger.error(
                 "Surfclass does not support training an already existing model.."
@@ -134,8 +134,9 @@ class RandomForest:
         Args:
             X (np.array): 2D Matrix of feature observations.
 
-        Returns: 
+        Returns:
             np.array: classified vector.
+
         """
         assert (
             self.model is not None

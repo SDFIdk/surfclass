@@ -55,9 +55,10 @@ def stack_rasters(raster_paths, bbox=None):
     # Stack the features along the 3rd axis and reshape to (X,n)
     stacked_features = np.ma.dstack(features).reshape(-1, len(features))
 
+    # Invert the mask to get all valid data points
     logical_or_mask = np.invert(stacked_features.mask.any(axis=1))
 
-    # Get the data as the mask will be false in all cases
+    # Get the data from the masked array
     valid_features = stacked_features[logical_or_mask].data
 
     # Return the intersected mask to be able insert nodata after classification
