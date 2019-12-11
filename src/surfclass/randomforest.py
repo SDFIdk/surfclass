@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class RandomForest:
     """Train or classify using a RandomForest model."""
 
-    def __init__(self, num_features, num_trees=200, model=None):
+    def __init__(self, num_features, model=None):
         """Create instance of RandomForest.
 
         Args:
@@ -20,7 +20,6 @@ class RandomForest:
 
         """
         self.num_features = num_features
-        self.num_trees = num_trees
         self.model = self.load_model(model)
 
     def load_model(self, model):
@@ -66,14 +65,6 @@ class RandomForest:
             )
             return None
 
-        if not model.n_estimators == self.num_trees:
-            logger.error(
-                "Number of trees is different from model parameter. Model has: %d, input was: %d",
-                model.n_estimators,
-                self.num_trees,
-            )
-            return None
-
         if not model.n_features_ == self.num_features:
             logger.error(
                 "Number of features is different from model parameter. Model has: %d, input was: %d",
@@ -84,7 +75,7 @@ class RandomForest:
 
         return model
 
-    def train(self, X, y):
+    def train(self, X, y, num_trees=200):
         """Train/Fit a RandomForestClassifier using the observation matrix X and class vector y.
 
         Args:
@@ -116,7 +107,7 @@ class RandomForest:
         ), "Number of class observations does not match number of feature observations."
 
         rf = RandomForestClassifier(
-            n_estimators=self.num_trees, oob_score=False, verbose=0, n_jobs=-1
+            n_estimators=num_trees, oob_score=False, verbose=0, n_jobs=-1
         )
 
         # fit the model

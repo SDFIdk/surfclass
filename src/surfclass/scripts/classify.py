@@ -60,7 +60,7 @@ def testmodel1(
     (X, mask, geotransform, srs, _shape) = stack_rasters(features, bbox)
     indices = np.where(mask)[0]
     # Instantiate the RandomForest model
-    classifier = RandomForest(len(features), num_trees=50, model=model)
+    classifier = RandomForest(len(features), model=model)
 
     # Classify X using the instantiated RandomForest model
     logger.debug("Starting classification")
@@ -186,7 +186,7 @@ def randomforestndvi(
     (X, mask, geotransform, srs, _shape) = stack_rasters(features, bbox)
     indices = np.where(mask)[0]
     # Instantiate the RandomForest model
-    classifier = RandomForest(len(features), num_trees=50, model=model)
+    classifier = RandomForest(len(features), model=model)
 
     # Classify X using the instantiated RandomForest model
     logger.debug("Starting classification")
@@ -282,7 +282,7 @@ def genericmodel(rasterfiles, model, outdir, bbox, prefix, postfix):
     (X, mask, geotransform, srs, _shape) = stack_rasters(features, bbox)
     indices = np.where(mask)[0]
     # Instantiate the RandomForest model
-    classifier = RandomForest(len(features), num_trees=50, model=model)
+    classifier = RandomForest(len(features), model=model)
 
     # Classify X using the instantiated RandomForest model
     logger.debug("Starting classification")

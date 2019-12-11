@@ -45,9 +45,9 @@ def testmodel1(trainingdata, outputfile, numtrees):
         numtrees,
     )
 
-    classifier = RandomForest(4, num_trees=numtrees, model=None)
+    classifier = RandomForest(4, model=None)
     logger.debug("Training testmodel1...")
-    rf_trained = classifier.train(features, classes)
+    rf_trained = classifier.train(features, classes, num_trees=numtrees)
 
     pickle.dump(rf_trained, open(outputfile, "wb"))
     logger.debug(
@@ -86,9 +86,9 @@ def randomforestndvi(trainingdata, outputfile, numtrees):
         numtrees,
     )
     # TODO: Might make sense to generalize the train function, if so pass in features.shape[1] instead of "10"
-    classifier = RandomForest(10, num_trees=numtrees, model=None)
+    classifier = RandomForest(10, model=None)
     logger.debug("Training randomforestndvi")
-    rf_trained = classifier.train(features, classes)
+    rf_trained = classifier.train(features, classes, num_trees=numtrees)
 
     pickle.dump(rf_trained, open(outputfile, "wb"))
     logger.debug(
@@ -130,9 +130,9 @@ def genericmodel(trainingdata, outputfile, numtrees):
         numtrees,
     )
 
-    classifier = RandomForest(features.shape[1], num_trees=numtrees, model=None)
+    classifier = RandomForest(features.shape[1], model=None)
     logger.debug("Training Model...")
-    rf_trained = classifier.train(features, classes)
+    rf_trained = classifier.train(features, classes, num_trees=numtrees)
 
     pickle.dump(rf_trained, open(outputfile, "wb"))
     logger.debug(
