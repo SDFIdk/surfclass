@@ -1,3 +1,4 @@
+import numpy as np
 from surfclass import Bbox
 from surfclass.kernelfeatureextraction import KernelFeatureExtraction
 
@@ -80,11 +81,19 @@ def test_kernelfeatureextraction_nobbox(amplituderaster_filepath, tmp_path):
     # Since we reflected output shape is equal to input shape
     assert derived_features[0].shape == (250, 250)
 
+    assert all(x[0].dtype == "float32" for x in derived_features)
+
     # Test that mean and variance calculation in "simple cases" are correct
     # Area is picked such that no "nodata" cells are included
-    assert extractor.array[110:115, 110:115].mean() == derived_features[0][112, 112]
-    assert extractor.array[110:115, 110:115].var() == derived_features[1][112, 112]
+    assert (
+        np.float32(extractor.array[110:115, 110:115].mean())
+        == derived_features[0][112, 112]
+    )
+    assert (
+        np.float32(extractor.array[110:115, 110:115].var())
+        == derived_features[1][112, 112]
+    )
 
     # Test DiffMean is correct
     diffmean = extractor.array[112, 112] - extractor.array[110:115, 110:115].mean()
-    assert diffmean == derived_features[2][112, 112]
+    assert np.float32(diffmean) == derived_features[2][112, 112]

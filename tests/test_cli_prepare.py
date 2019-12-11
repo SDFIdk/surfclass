@@ -76,7 +76,8 @@ def test_cli_prepare_extractfeatures(cli_runner, amplituderaster_filepath, tmp_p
     assert ds.RasterXSize == 250
     assert ds.RasterYSize == 250
     band = ds.GetRasterBand(1)
-    assert band.DataType == gdal.GDT_Float64
+    assert band.DataType == gdal.GDT_Float32
+    assert band.GetNoDataValue() == -99
     ds = None
 
     outfile = tmp_path / "var.tif"
@@ -85,7 +86,8 @@ def test_cli_prepare_extractfeatures(cli_runner, amplituderaster_filepath, tmp_p
     assert ds.RasterXSize == 250
     assert ds.RasterYSize == 250
     band = ds.GetRasterBand(1)
-    assert band.DataType == gdal.GDT_Float64
+    assert band.DataType == gdal.GDT_Float32
+    assert band.GetNoDataValue() == -99
     ds = None
 
 
