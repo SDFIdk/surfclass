@@ -40,12 +40,18 @@ def test_kernelfeatureextraction(amplituderaster_filepath, tmp_path):
 
     # Test that mean and variance calculation in "simple cases" are correct
     # Area is picked such that no "nodata" cells are included
-    assert extractor.array[110:115, 110:115].mean() == derived_features[0][112, 112]
-    assert extractor.array[110:115, 110:115].var() == derived_features[1][112, 112]
+    assert (
+        np.float32(extractor.array[110:115, 110:115].mean())
+        == derived_features[0][112, 112]
+    )
+    assert (
+        np.float32(extractor.array[110:115, 110:115].var())
+        == derived_features[1][112, 112]
+    )
 
     # Test DiffMean is correct
     diffmean = extractor.array[112, 112] - extractor.array[110:115, 110:115].mean()
-    assert diffmean == derived_features[2][112, 112]
+    assert np.float32(diffmean) == derived_features[2][112, 112]
 
 
 def test_kernelfeatureextraction_nobbox(amplituderaster_filepath, tmp_path):
