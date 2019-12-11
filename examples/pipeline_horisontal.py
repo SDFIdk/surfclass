@@ -19,6 +19,7 @@ las_dir = Path(
 orto_dir = Path(
     "/Volumes/Macintosh HD/Volumes/GoogleDrive/My Drive/Septima - Ikke synkroniseret/Projekter/SDFE/Befæstelse/data/ortofoto"
 )
+modelfile = "/Volumes/Macintosh HD/Volumes/GoogleDrive/My Drive/Septima - Ikke synkroniseret/Projekter/SDFE/Befæstelse/train_test/randomforestndvi.model"
 out_dir = Path("./tmp")
 dimensions = ["Amplitude", "Pulsewidth", "ReturnNumber"]
 
@@ -61,53 +62,12 @@ for d in dimensions:
     subprocess.Popen(" ".join(args), shell=True).wait()
 
 
-def process_derived(t):
-    n, e = t
-    kvnet = "1km_%s_%s" % (n, e)
-    # Caculate bbox including edge for kernel
-    bbox = (e * 1000 - 0.8, n * 1000 - 0.8, e * 1000 + 1000.8, n * 1000 + 1000.8)
-    for d in ["Amplitude", "Pulsewidth"]:
-        if (out_dir / ("%s_%s_mean.tif" % (kvnet, d))).exists():
-            print("Existing derived features found for %s_%s. Skipping" % (kvnet, d))
-            continue
-        args = ["surfclass", "prepare", "extractfeatures"]
-        args += ["--bbox"] + [str(x) for x in bbox]
-        args += ["-n", "5"]
-        args += ["-c", "crop"]
-        args += ["--prefix", "%s_%s_" % (kvnet, d)]
-        args += ["-f", "mean"]
-        args += ["-f", "var"]
-        args += ["-f", "diffmean"]
-        args += ["%s/%s.vrt" % (out_dir.resolve(), d)]
-        args += [out_dir]
-        print("Running: ", args)
-        subprocess.run(args, check=True)
-
-
-print("Calculate derived features")
-for t in tiles:
-    process_derived(t)
-
-print("Make GDAL vrts for derived features")
-for d in ("Amplitude", "Pulsewidth"):
-    for m in ("mean", "var", "diffmean"):
-        args = ["gdalbuildvrt"]
-        args += ["-resolution", "user"]
-        # Cover entire DK + margin
-        args += ["-tap"]
-        args += ["-tr", "0.4", "0.4"]
-        args += ["-te", "440000", "6048000", "895000", "6404000"]
-        args += ["%s/%s_%s.vrt" % (out_dir, d, m)]  # Output vrt
-        args += ["%s/*_%s_%s.tif" % (out_dir, d, m)]  # Input files
-        print("Running: ", args)
-        subprocess.Popen(" ".join(args), shell=True).wait()
-
 print("Process NDVI")
 for t in tiles:
     kvnet = "1km_%s_%s" % t
     srcfile = orto_dir / ("2019_%s.tif" % kvnet)
     tmpfile = out_dir / ("tmp_%s.tif" % kvnet)
-    dstfile = out_dir / ("2019_%s_ndvi.tif" % kvnet)
+    dstfile = out_dir / ("%s_ndvi.tif" % kvnet)
     if dstfile.exists():
         print("Existing NDVI found for %s. Skipping" % kvnet)
         continue
@@ -139,13 +99,78 @@ args += ["-tap"]
 args += ["-tr", "0.4", "0.4"]
 args += ["-te", "440000", "6048000", "895000", "6404000"]
 args += [str(out_dir / "ndvi.vrt")]  # Output vrt
-args += [str(out_dir / "2019_1km_*_ndvi.tif")]  # Input files
+args += [str(out_dir / "1km_*_ndvi.tif")]  # Input files
 print("Running: ", args)
 subprocess.Popen(" ".join(args), shell=True).wait()
 
-print("Run classification")
-print("...not implemented yet...")
 
+def process_derived(t):
+    n, e = t
+    kvnet = "1km_%s_%s" % (n, e)
+    # Caculate bbox including edge for kernel
+    bbox = (e * 1000 - 0.8, n * 1000 - 0.8, e * 1000 + 1000.8, n * 1000 + 1000.8)
+    for d in ["Amplitude", "Pulsewidth", "ndvi"]:
+        if (out_dir / ("%s_%s_mean.tif" % (kvnet, d))).exists():
+            print("Existing derived features found for %s_%s. Skipping" % (kvnet, d))
+            continue
+        args = ["surfclass", "prepare", "extractfeatures"]
+        args += ["--bbox"] + [str(x) for x in bbox]
+        args += ["-n", "5"]
+        args += ["-c", "crop"]
+        args += ["--prefix", "%s_%s_" % (kvnet, d)]
+        args += ["-f", "mean"]
+        args += ["-f", "var"]
+        args += ["-f", "diffmean"]
+        args += ["%s/%s.vrt" % (out_dir.resolve(), d)]
+        args += [out_dir]
+        print("Running: ", args)
+        subprocess.run(args, check=True)
+
+
+print("Calculate derived features")
+for t in tiles:
+    process_derived(t)
+
+print("Make GDAL vrts for derived features")
+for d in ("Amplitude", "Pulsewidth", "ndvi"):
+    for m in ("mean", "var", "diffmean"):
+        args = ["gdalbuildvrt"]
+        args += ["-resolution", "user"]
+        # Cover entire DK + margin
+        args += ["-tap"]
+        args += ["-tr", "0.4", "0.4"]
+        args += ["-te", "440000", "6048000", "895000", "6404000"]
+        args += ["%s/%s_%s.vrt" % (out_dir, d, m)]  # Output vrt
+        args += ["%s/*_%s_%s.tif" % (out_dir, d, m)]  # Input files
+        print("Running: ", args)
+        subprocess.Popen(" ".join(args), shell=True).wait()
+
+print("Run classification")
+for t in tiles:
+    n, e = t
+    kvnet = "1km_%s_%s" % (n, e)
+    bbox = (e * 1000, n * 1000, e * 1000 + 1000, n * 1000 + 1000)
+    dstfile = out_dir / ("%s_classification.tif" % kvnet)
+    if dstfile.exists():
+        print("%s exists. Skipping" % dstfile)
+        continue
+    args = ["surfclass", "classify", "randomforestndvi"]
+    args += ["--bbox"] + [str(x) for x in bbox]
+    args += ["-f1", out_dir / "Amplitude.vrt"]
+    args += ["-f2", out_dir / "Amplitude_mean.vrt"]
+    args += ["-f3", out_dir / "Amplitude_var.vrt"]
+    args += ["-f4", out_dir / "ndvi.vrt"]
+    args += ["-f5", out_dir / "ndvi_mean.vrt"]
+    args += ["-f6", out_dir / "ndvi_var.vrt"]
+    args += ["-f7", out_dir / "pulsewidth.vrt"]
+    args += ["-f8", out_dir / "pulsewidth_mean.vrt"]
+    args += ["-f9", out_dir / "pulsewidth_var.vrt"]
+    args += ["-f10", out_dir / "returnnumber.vrt"]
+    args += ["--prefix", "%s_" % kvnet]
+    args += [modelfile]
+    args += [out_dir]
+    print("Running: ", args)
+    subprocess.run(args, check=True)
 
 print("Denoise")
 for t in tiles:
@@ -154,9 +179,9 @@ for t in tiles:
     bbox = (e * 1000, n * 1000, e * 1000 + 1000, n * 1000 + 1000)
     # Add buffer to reduce nearest neighbor artefacts
     bbox_buffer = (bbox[0] - 20, bbox[1] - 20, bbox[2] + 20, bbox[3] + 20)
-    srcfile = out_dir / ("%s_classified.tif" % kvnet)
-    tmpfile = out_dir / ("tmp_%s_classified_denoised.tif" % kvnet)
-    dstfile = out_dir / ("%s_classified_denoised.tif" % kvnet)
+    srcfile = out_dir / ("%s_classification.tif" % kvnet)
+    tmpfile = out_dir / ("tmp_%s_classification_denoised.tif" % kvnet)
+    dstfile = out_dir / ("%s_classification_denoised.tif" % kvnet)
     if dstfile.exists():
         print("%s exists. Skipping" % dstfile)
         continue
@@ -180,8 +205,8 @@ for t in tiles:
 print("Burn buildings and lakes")
 for t in tiles:
     kvnet = "1km_%s_%s" % t
-    srcfile = out_dir / ("%s_classified_denoised.tif" % kvnet)
-    dstfile = out_dir / ("%s_classified_denoised_burn.tif" % kvnet)
+    srcfile = out_dir / ("%s_classification_denoised.tif" % kvnet)
+    dstfile = out_dir / ("%s_classification_denoised_burn.tif" % kvnet)
     if dstfile.exists():
         print("%s exists. Skipping" % dstfile)
         continue
@@ -196,4 +221,3 @@ for t in tiles:
         args += [dstfile]
         print("Running: ", args)
         subprocess.run(args, check=True)
-
