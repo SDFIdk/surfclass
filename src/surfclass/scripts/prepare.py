@@ -128,14 +128,8 @@ def extractfeatures(
     The bbox is used when *reading* the raster. If the strategy is "crop" the resulting bbox will be smaller.
 
     Example:
-<<<<<<< HEAD
-    surfclass prepare extractfeatures -b 721000 6150000 722000 6151000
-        -n 5 -c reflect -f mean -f var 1km_6150_721_amplitude.tif c:\outdir\
-=======
         surfclass prepare extractfeatures -b 721000 6150000 722000 6151000
             -n 5 -c reflect -f mean -f var 1km_6150_721_amplitude.tif c:\outdir\
->>>>>>> safer geotransform comparison and cleanup
-
     """
     # Log inputs
     logger.debug(
