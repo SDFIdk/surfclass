@@ -194,7 +194,7 @@ for t in tiles:
     args = ["gdal_translate"]
     args += ["-co", "tiled=true"]
     args += ["-co", "compress=deflate"]
-    args += ["-projwin"] + +[str(x) for x in bbox]
+    args += ["-projwin", bbox[0], bbox[3], bbox[2], bbox[1]]
     args += [tmpfile]
     args += [dstfile]
     print("Running: ", args)
