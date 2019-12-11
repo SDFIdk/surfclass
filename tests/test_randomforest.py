@@ -30,8 +30,8 @@ def test_randomforest_train(polygons_filepath, data_dir, tmp_path):
 
     # Define the RandomForest model with the training data loaded
     # Use a low amount of trees to reduce test time
-    model = RandomForest(num_features, 10, model=None)
+    model = RandomForest(num_features, model=None)
 
-    trained_model = model.train(read_features, read_classes)
+    trained_model = model.train(read_features, read_classes, num_trees=10)
     assert trained_model.n_features_ == num_features
     assert trained_model.n_estimators == 10

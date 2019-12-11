@@ -8,9 +8,9 @@ logger = logging.getLogger(__name__)
 
 
 class RandomForest:
-    """Performs a RandomForest Classification by reading multiple raster inputs and a trained model."""
+    """Train or classify using a RandomForest model."""
 
-    def __init__(self, num_features, num_trees=200, model=None):
+    def __init__(self, num_features, model=None):
         """Create instance of RandomForest.
 
         Args:
@@ -20,7 +20,6 @@ class RandomForest:
 
         """
         self.num_features = num_features
-        self.num_trees = num_trees
         self.model = self.load_model(model)
 
     def load_model(self, model):
@@ -39,7 +38,6 @@ class RandomForest:
         if isinstance(model, str):
             try:
                 model = pickle.load(open(model, "rb"))
-
                 return self.validate_model(model)
             except OSError:
                 logger.error("Could not load RandomForestModel")
@@ -47,7 +45,6 @@ class RandomForest:
 
         elif isinstance(model, RandomForestClassifier):
             # Validate model based on parameters
-
             return self.validate_model(model)
 
         return None
@@ -68,14 +65,6 @@ class RandomForest:
             )
             return None
 
-        if not model.n_estimators == self.num_trees:
-            logger.error(
-                "Number of trees is different from model parameter. Model has: %d, input was: %d",
-                model.n_estimators,
-                self.num_trees,
-            )
-            return None
-
         if not model.n_features_ == self.num_features:
             logger.error(
                 "Number of features is different from model parameter. Model has: %d, input was: %d",
@@ -86,7 +75,7 @@ class RandomForest:
 
         return model
 
-    def train(self, X, y):
+    def train(self, X, y, num_trees=200):
         """Train/Fit a RandomForestClassifier using the observation matrix X and class vector y.
 
         Args:
@@ -97,7 +86,7 @@ class RandomForest:
             sklearn.ensemble.RandomForestClassifier: A trained RandomForestClassifier model.
 
         """
-        # If a model is already defined, something is wrong
+        # If a model is already defined, something is wrong. Does not support training multiple times in a row.
         if self.model is not None:
             logger.error(
                 "Surfclass does not support training an already existing model.."
@@ -117,14 +106,8 @@ class RandomForest:
             X.shape[0] == y.shape[0]
         ), "Number of class observations does not match number of feature observations."
 
-        # assert (
-        #    len(np.unique(y)) == self.num_classes
-        # ), "Number of classes in class observation does not match model parameter."
-
-        # TODO: sklearn uses print() for all logging, see: https://github.com/scikit-learn/scikit-learn/issues/78
-        # getting the output into the correct logging class is troublesome.
         rf = RandomForestClassifier(
-            n_estimators=self.num_trees, oob_score=False, verbose=0, n_jobs=-1
+            n_estimators=num_trees, oob_score=False, verbose=0, n_jobs=-1
         )
 
         # fit the model
@@ -141,6 +124,9 @@ class RandomForest:
 
         Args:
             X (np.array): 2D Matrix of feature observations.
+
+        Returns:
+            np.array: classified vector.
 
         """
         assert (

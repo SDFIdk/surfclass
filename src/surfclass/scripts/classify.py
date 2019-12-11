@@ -60,7 +60,7 @@ def testmodel1(
     (X, mask, geotransform, srs, _shape) = stack_rasters(features, bbox)
     indices = np.where(mask)[0]
     # Instantiate the RandomForest model
-    classifier = RandomForest(len(features), num_trees=50, model=model)
+    classifier = RandomForest(len(features), model=model)
 
     # Classify X using the instantiated RandomForest model
     logger.debug("Starting classification")
@@ -186,7 +186,103 @@ def randomforestndvi(
     (X, mask, geotransform, srs, _shape) = stack_rasters(features, bbox)
     indices = np.where(mask)[0]
     # Instantiate the RandomForest model
-    classifier = RandomForest(len(features), num_trees=50, model=model)
+    classifier = RandomForest(len(features), model=model)
+
+    # Classify X using the instantiated RandomForest model
+    logger.debug("Starting classification")
+    class_prediction = classifier.classify(X)
+    logger.debug("Finished classification")
+
+    output = np.zeros(mask.shape[0])
+
+    # Convert to byte array to save space
+    output[indices] = np.int8(class_prediction)
+    output = output.reshape(_shape)
+    name = f"{fileprefix}{filename}{filepostfix}.tif"
+    outpath = str(pathlib.Path(outdir) / name)
+
+    # Get origin and resolution from geotransform
+    origin = (geotransform[0], geotransform[3])
+    resolution = geotransform[1]
+    logger.debug("Writing classification output here: %s", outpath)
+    write_to_file(outpath, output, origin, resolution, srs, nodata=0)
+
+
+@classify.command()
+@options.bbox_opt(required=True)
+@click.option(
+    "-f",
+    "--feature",
+    "rasterfiles",
+    type=click.Path(exists=True, file_okay=True, dir_okay=False),
+    multiple=True,
+    required=True,
+    help="Feature raster file. Multiple allowed. NOTE: Order is important!!!",
+)
+@click.option("--prefix", default=None, required=False, help="Output file prefix")
+@click.option("--postfix", default=None, required=False, help="Output file postfix")
+@click.argument(
+    "model",
+    type=click.Path(exists=True, dir_okay=False),
+    # Allow just one model
+    nargs=1,
+)
+@click.argument(
+    "outdir",
+    type=click.Path(exists=False, file_okay=False),
+    # Allow just one output directory
+    nargs=1,
+)
+def genericmodel(rasterfiles, model, outdir, bbox, prefix, postfix):
+    r"""
+    Generic Model
+
+    Create a surface classified raster using a set of input features and a trained RandomForest model.
+
+    The input features must match the model provided. Add "-v INFO" to check that the order of the input
+    rasters meet expectations
+
+    Example:  surfclass classify genericmodel -b 721000 6150000 722000 6151000
+                                                                     -f 1km_6150_721_Amplitude.tif
+                                                                     -f 1km_6150_721_Amplitude_mean.tif
+                                                                     -f 1km_6150_721_Amplitude_var.tif
+                                                                     -f 1km_6150_721_NDVI.tif
+                                                                     -f 1km_6150_721_NDVI_mean.tif
+                                                                     -f 1km_6150_721_NDVI_var.tif
+                                                                     -f 1km_6150_721_Pulsewidth.tif
+                                                                     -f 1km_6150_721_Pulsewidth_mean.tif
+                                                                     -f 1km_6150_721_Pulsewidth_var.tif
+                                                                     -f 1km_6171_727_ReturnNumber.tif
+                                                                     genericmodel.sav
+                                                                     c:\outdir\
+    """
+    # Log inputs
+    logger.debug(
+        "Classification with model %s started with arguments: %s, %s, %s",
+        model,
+        outdir,
+        prefix,
+        postfix,
+    )
+
+    # Print feature order. This is important.
+    click.echo("Classifying using %s with features:" % model)
+    for i, fp in enumerate(rasterfiles):
+        click.echo(f"f{i+1}: {fp}")
+
+    filename = "classification"
+    fileprefix = prefix or ""
+    filepostfix = postfix or ""
+    # Make sure output dir exists
+    pathlib.Path(outdir).mkdir(parents=True, exist_ok=True)
+
+    # Read the input rasters and stack them into an np.ndarray
+    features = rasterfiles
+
+    (X, mask, geotransform, srs, _shape) = stack_rasters(features, bbox)
+    indices = np.where(mask)[0]
+    # Instantiate the RandomForest model
+    classifier = RandomForest(len(features), model=model)
 
     # Classify X using the instantiated RandomForest model
     logger.debug("Starting classification")
