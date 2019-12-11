@@ -22,6 +22,7 @@ orto_dir = Path(
 modelfile = "/Volumes/Macintosh HD/Volumes/GoogleDrive/My Drive/Septima - Ikke synkroniseret/Projekter/SDFE/Befæstelse/train_test/randomforestndvi.model"
 out_dir = Path("./tmp")
 dimensions = ["Amplitude", "Pulsewidth", "ReturnNumber"]
+geodkdb = "/Volumes/Macintosh HD/Volumes/GoogleDrive/My Drive/Septima - Ikke synkroniseret/Projekter/SDFE/Befæstelse/data/geodk.gpkg"
 
 # Do all lidar gridding
 def process_lidar_tile(t):
@@ -172,6 +173,19 @@ for t in tiles:
     print("Running: ", args)
     subprocess.run(args, check=True)
 
+
+print("Make GDAL vrts for classified")
+args = ["gdalbuildvrt"]
+args += ["-resolution", "user"]
+# Cover entire DK + margin
+args += ["-tap"]
+args += ["-tr", "0.4", "0.4"]
+args += ["-te", "440000", "6048000", "895000", "6404000"]
+args += [str(out_dir / "classification.vrt")]  # Output vrt
+args += [str(out_dir / "1km_*_classification.tif")]  # Input files
+print("Running: ", args)
+subprocess.Popen(" ".join(args), shell=True).wait()
+
 print("Denoise")
 for t in tiles:
     n, e = t
@@ -179,7 +193,7 @@ for t in tiles:
     bbox = (e * 1000, n * 1000, e * 1000 + 1000, n * 1000 + 1000)
     # Add buffer to reduce nearest neighbor artefacts
     bbox_buffer = (bbox[0] - 20, bbox[1] - 20, bbox[2] + 20, bbox[3] + 20)
-    srcfile = out_dir / ("%s_classification.tif" % kvnet)
+    srcfile = out_dir / ("classification.vrt")
     tmpfile = out_dir / ("tmp_%s_classification_denoised.tif" % kvnet)
     dstfile = out_dir / ("%s_classification_denoised.tif" % kvnet)
     if dstfile.exists():
@@ -194,30 +208,70 @@ for t in tiles:
     args = ["gdal_translate"]
     args += ["-co", "tiled=true"]
     args += ["-co", "compress=deflate"]
-    args += ["-projwin", bbox[0], bbox[3], bbox[2], bbox[1]]
+    args += ["-projwin", str(bbox[0]), str(bbox[3]), str(bbox[2]), str(bbox[1])]
     args += [tmpfile]
     args += [dstfile]
     print("Running: ", args)
     subprocess.run(args, check=True)
     tmpfile.unlink()
 
+print("Make GDAL vrts for denoised")
+args = ["gdalbuildvrt"]
+args += ["-resolution", "user"]
+# Cover entire DK + margin
+args += ["-tap"]
+args += ["-tr", "0.4", "0.4"]
+args += ["-te", "440000", "6048000", "895000", "6404000"]
+args += [str(out_dir / "classification_denoised.vrt")]  # Output vrt
+args += [str(out_dir / "1km_*_classification_denoised.tif")]  # Input files
+print("Running: ", args)
+subprocess.Popen(" ".join(args), shell=True).wait()
 
 print("Burn buildings and lakes")
 for t in tiles:
     kvnet = "1km_%s_%s" % t
+    n, e = t
+    bbox = (e * 1000, n * 1000, e * 1000 + 1000, n * 1000 + 1000)
     srcfile = out_dir / ("%s_classification_denoised.tif" % kvnet)
+    tmpfile = out_dir / ("tmp_%s_classification_denoised_burn.tif" % kvnet)
     dstfile = out_dir / ("%s_classification_denoised_burn.tif" % kvnet)
     if dstfile.exists():
         print("%s exists. Skipping" % dstfile)
         continue
-    shutil.copy(srcfile, dstfile)
-    for classid, layername in [(8, "BYGNING"), (9, "SOE")]:
+    shutil.copy(srcfile, tmpfile)
+    for classid, layername in [
+        (8, "geodanmark_60_nohist.bygning"),
+        (9, "geodanmark_60_nohist.soe"),
+    ]:
+        # gdal_rasterize is is slow with large input vector datasets
+        # Extract bbox from database
+        tmpgeom = out_dir / ("tmp_%s.geojson" % kvnet)
+        args = ["ogr2ogr"]
+        args += ["-f", "GeoJSON"]
+        args += ["-spat"] + [str(x) for x in bbox]
+        args += [tmpgeom, geodkdb, layername]
+        print("Running: ", " ".join(map(str, args)))
+        subprocess.run(args, check=True)
+        # Now use subset
         args = ["gdal_rasterize"]
         args += ["-burn", str(classid)]
-        args += ["-l", layername]
-        args += [
-            "https://services.kortforsyningen.dk/service?servicename=fot2007_nohistory_gml212&token=e783865388cab694299da1ae82ee20bc"
-        ]
-        args += [dstfile]
-        print("Running: ", args)
+        # args += ["-l", layername]
+        args += [tmpgeom]
+        args += [tmpfile]
+        print("Running: ", " ".join(map(str, args)))
         subprocess.run(args, check=True)
+        tmpgeom.unlink()
+    shutil.copy(tmpfile, dstfile)
+    tmpfile.unlink()
+
+print("Make GDAL vrts for denoised burned")
+args = ["gdalbuildvrt"]
+args += ["-resolution", "user"]
+# Cover entire DK + margin
+args += ["-tap"]
+args += ["-tr", "0.4", "0.4"]
+args += ["-te", "440000", "6048000", "895000", "6404000"]
+args += [str(out_dir / "classification_denoised_burn.vrt")]  # Output vrt
+args += [str(out_dir / "1km_*_classification_denoised_burn.tif")]  # Input files
+print("Running: ", args)
+subprocess.Popen(" ".join(args), shell=True).wait()
