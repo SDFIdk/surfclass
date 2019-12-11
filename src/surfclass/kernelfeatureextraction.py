@@ -133,29 +133,32 @@ class KernelFeatureExtraction:
             edge_size = 0
 
         # define indices of the inside mask of the new cropped array
-        crop_indices = [
+        crop_indices = (
             slice(edge_size, self.array.shape[0] - edge_size),
             slice(edge_size, self.array.shape[1] - edge_size),
-        ]
+        )
 
         for feat_name in self.outputfeatures:
             if feat_name == "mean":
                 yield np.ma.masked_array(
-                    np.ma.mean(masked_values, axis=2), mask=mask[tuple(crop_indices)]
+                    np.ma.mean(masked_values, axis=2).astype("float32"),
+                    mask=mask[crop_indices],
                 ), feat_name
 
             if feat_name == "diffmean":
                 yield np.ma.masked_array(
                     (
-                        self.array[tuple(crop_indices)]
-                        - np.ma.mean(masked_values, axis=2)
+                        (
+                            self.array[crop_indices] - np.ma.mean(masked_values, axis=2)
+                        ).astype("float32")
                     ),
-                    mask=mask[tuple(crop_indices)],
+                    mask=mask[crop_indices],
                 ), feat_name
 
             if feat_name == "var":
                 yield np.ma.masked_array(
-                    np.ma.var(masked_values, axis=2), mask=mask[tuple(crop_indices)]
+                    np.ma.var(masked_values, axis=2).astype("float32"),
+                    mask=mask[crop_indices],
                 ), feat_name
 
     @staticmethod
@@ -232,5 +235,4 @@ class KernelFeatureExtraction:
                 origin,
                 self.rasterreader.resolution,
                 self.rasterreader.srs,
-                nodata=self.nodata,
             )
