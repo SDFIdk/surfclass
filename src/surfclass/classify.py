@@ -32,7 +32,8 @@ def stack_rasters(raster_paths, bbox=None):
             bbox = rr.bbox
 
         nodata = rr.nodata
-        geotransform = rr.geotransform
+        window = rr.bbox_to_pixel_window(bbox)
+        geotransform = rr.window_geotransform(window)
         srs = rr.srs
         if _tmp_geotransform is None:
             _tmp_geotransform = geotransform
@@ -42,7 +43,7 @@ def stack_rasters(raster_paths, bbox=None):
         ), "Features does not stack, geotransformations must be equal for all rasters"
 
         # Do not mask the raster.
-        array = rr.read_raster(bbox=bbox, masked=False)
+        array = rr.read_raster(window=window, masked=False)
         _shape = array.shape
         # TODO: Continuing issue. Come up with common way to treat this
         if nodata is not None:
