@@ -117,10 +117,14 @@ def denoise(classraster, output, bbox):
     """
     logger.debug("Denoising %s", classraster)
     reader = rasterio.RasterReader(classraster)
-    originX, pixel_width, _, originY, _, pixel_height = reader.geotransform
+    bbox = bbox or reader.bbox
+    window = reader.bbox_to_pixel_window(bbox)
+    originX, pixel_width, _, originY, _, pixel_height = reader.window_geotransform(
+        window
+    )
     assert np.isclose(abs(pixel_height), abs(pixel_width)), "Pixels must be square"
     logger.debug("Reading data within bbox %s", bbox)
-    data = reader.read_raster(bbox=bbox, masked=True)
+    data = reader.read_raster(window=window, masked=True)
     logger.debug("Denoising")
     denoised = noise.denoise(data)
     logger.debug("Writing output to %s", output)
