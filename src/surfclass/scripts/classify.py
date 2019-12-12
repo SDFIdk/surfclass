@@ -219,8 +219,12 @@ def randomforestndvi(
     required=True,
     help="Feature raster file. Multiple allowed. NOTE: Order is important!!!",
 )
-@click.option("--prefix", default=None, required=False, help="Output file prefix")
-@click.option("--postfix", default=None, required=False, help="Output file postfix")
+@click.option(
+    "--prob",
+    default=None,
+    required=False,
+    help="File path for probability output raster",
+)
 @click.argument(
     "model",
     type=click.Path(exists=True, dir_okay=False),
@@ -228,12 +232,12 @@ def randomforestndvi(
     nargs=1,
 )
 @click.argument(
-    "outdir",
+    "output",
     type=click.Path(exists=False, file_okay=False),
     # Allow just one output directory
     nargs=1,
 )
-def genericmodel(rasterfiles, model, outdir, bbox, prefix, postfix):
+def genericmodel(rasterfiles, model, bbox, prob, output):
     r"""
     Generic Model
 
@@ -253,28 +257,22 @@ def genericmodel(rasterfiles, model, outdir, bbox, prefix, postfix):
                                                                      -f 1km_6150_721_Pulsewidth_mean.tif
                                                                      -f 1km_6150_721_Pulsewidth_var.tif
                                                                      -f 1km_6171_727_ReturnNumber.tif
+                                                                     --prob ./classified_prob.tif
                                                                      genericmodel.sav
-                                                                     c:\outdir\
+                                                                     ./classified.tif
     """
     # Log inputs
     logger.debug(
         "Classification with model %s started with arguments: %s, %s, %s",
         model,
-        outdir,
-        prefix,
-        postfix,
+        bbox,
+        output,
+        prob,
     )
-
     # Print feature order. This is important.
     click.echo("Classifying using %s with features:" % model)
     for i, fp in enumerate(rasterfiles):
         click.echo(f"f{i+1}: {fp}")
-
-    filename = "classification"
-    fileprefix = prefix or ""
-    filepostfix = postfix or ""
-    # Make sure output dir exists
-    pathlib.Path(outdir).mkdir(parents=True, exist_ok=True)
 
     # Read the input rasters and stack them into an np.ndarray
     features = rasterfiles
@@ -289,16 +287,14 @@ def genericmodel(rasterfiles, model, outdir, bbox, prefix, postfix):
     class_prediction = classifier.classify(X)
     logger.debug("Finished classification")
 
-    output = np.zeros(mask.shape[0], dtype="uint8")
+    classified = np.zeros(mask.shape[0], dtype="uint8")
 
     # Convert to byte array to save space
-    output[indices] = class_prediction.astype("uint8")
-    output = output.reshape(_shape)
-    name = f"{fileprefix}{filename}{filepostfix}.tif"
-    outpath = str(pathlib.Path(outdir) / name)
+    classified[indices] = class_prediction.astype("uint8")
+    classified = classified.reshape(_shape)
 
     # Get origin and resolution from geotransform
     origin = (geotransform[0], geotransform[3])
     resolution = geotransform[1]
-    logger.debug("Writing classification output here: %s", outpath)
-    write_to_file(outpath, output, origin, resolution, srs, nodata=0)
+    logger.debug("Writing classification output here: %s", output)
+    write_to_file(output, classified, origin, resolution, srs, nodata=0)
