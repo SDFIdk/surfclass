@@ -19,8 +19,8 @@ las_dir = Path(
 orto_dir = Path(
     "/Volumes/Macintosh HD/Volumes/GoogleDrive/My Drive/Septima - Ikke synkroniseret/Projekter/SDFE/Befæstelse/data/ortofoto"
 )
-modelfile = "/Volumes/Macintosh HD/Volumes/GoogleDrive/My Drive/Septima - Ikke synkroniseret/Projekter/SDFE/Befæstelse/train_test/randomforestndvi.model"
-out_dir = Path("./tmp")
+modelfile = "/Volumes/Macintosh HD/Volumes/GoogleDrive/My Drive/Septima - Ikke synkroniseret/Projekter/SDFE/Befæstelse/train_test/randomforestndvi2.model"
+out_dir = Path("./tmp2")
 dimensions = ["Amplitude", "Pulsewidth", "ReturnNumber"]
 geodkdb = "/Volumes/Macintosh HD/Volumes/GoogleDrive/My Drive/Septima - Ikke synkroniseret/Projekter/SDFE/Befæstelse/data/geodk.gpkg"
 
