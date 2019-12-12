@@ -327,5 +327,4 @@ def copy_fields(src_lyr, dst_lyr):
                 'Cannot create field "%s" in layer "%s"'
                 % (fld_defn.GetName(), dst_lyr.GetName())
             )
-        else:
-            logger.debug("Created attribute: %s", fld_defn.GetName())
+        logger.debug("Created attribute: %s", fld_defn.GetName())
