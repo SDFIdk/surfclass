@@ -31,6 +31,7 @@ def test_cli_classify_testmodel1(cli_runner, testmodel1_filepath, tmp_path):
     srcband = ds.GetRasterBand(1)
     nodata = srcband.GetNoDataValue()
     prediction = ds.ReadAsArray()
+    assert prediction.dtype == "uint8"
     assert ds.GetGeoTransform() == (727000, 4, 0, 6172000, 0, -4)
     assert prediction.shape == (250, 250)
 
@@ -69,6 +70,7 @@ def test_cli_classify_genericmodel(cli_runner, testmodel1_filepath, tmp_path):
     srcband = ds.GetRasterBand(1)
     nodata = srcband.GetNoDataValue()
     prediction = ds.ReadAsArray()
+    assert prediction.dtype == "uint8"
     assert ds.GetGeoTransform() == (727000, 4, 0, 6172000, 0, -4)
     assert prediction.shape == (250, 250)
 
