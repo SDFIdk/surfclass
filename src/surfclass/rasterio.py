@@ -18,6 +18,7 @@ class RasterReader:
             raster_path (str): Path to raster file
 
         """
+        self.raster_path = raster_path
         self._ds = gdal.Open(str(raster_path), gdal.GA_ReadOnly)
         assert self._ds, "Could not open raster"
         self._band = self._ds.GetRasterBand(1)
@@ -166,7 +167,11 @@ class RasterReader:
             return np.empty(shape=(0, 0))
 
         if masked:
-            return np.ma.masked_values(src_array, self.nodata)
+            return (
+                np.ma.array(src_array)
+                if self.nodata is None
+                else np.ma.masked_values(src_array, self.nodata)
+            )
 
         return src_array
 
@@ -248,7 +253,11 @@ class MaskedRasterReader(RasterReader):
         # 1D array with cells inside geom only
         flattened = masked_subset.compressed()
         # Mark nodata cells as masked
-        return np.ma.masked_values(flattened, self.nodata)
+        return (
+            np.ma.array(flattened)
+            if self.nodata is None
+            else np.ma.masked_values(flattened, self.nodata)
+        )
 
 
 def write_to_file(filename, array, origin, resolution, srs, nodata=None):
