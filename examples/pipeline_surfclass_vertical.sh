@@ -31,7 +31,6 @@ surfclass -v DEBUG classify randomforestndvi -b ${BBOX} -f1 ./prepare/${PREFIX}_
                                                                      -f8 ./prepare/${PREFIX}_Pulsewidth_mean.tif \
                                                                      -f9 ./prepare/${PREFIX}_Pulsewidth_var.tif \
                                                                      -f10 ./prepare/${PREFIX}_ReturnNumber.tif \
-                                                                     --prefix ${PREFIX}_0_21_3 \
                                                                      ${MODEL} \
                                                                      ./extract
 # Extract step
