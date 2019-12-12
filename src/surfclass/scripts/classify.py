@@ -74,7 +74,9 @@ def randomforestndvi(
                                                                      -f9 1km_6150_721_Pulsewidth_var.tif
                                                                      -f10 1km_6171_727_ReturnNumber.tif
                                                                      A5_NDVI5_P5_R_NT400_1km_6171_727_40cm_predicted.sav
-                                                                     c:\outdir\
+                                                                     --prob ./classified_prob.tif
+                                                                     genericmodel.sav
+                                                                     ./classified.tif
     """
     # Log inputs
     logger.debug(
