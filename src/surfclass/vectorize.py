@@ -1,11 +1,10 @@
 """Tools for handling vector data."""
+import logging
 from osgeo import gdal, ogr
 import numpy as np
 from surfclass import Bbox
 
-# https://gist.github.com/AsgerPetersen/9642444
-
-class_map = {1: "xxx", 2: "yyy", 3: "zzz"}
+logger = logging.getLogger(__name__)
 
 
 def bbox_to_ogr_polygon(bbox):
@@ -66,9 +65,11 @@ class ClassCounter:
         self._total_field = "total_count"
         self._total_field_index = None
         self._zero_counts = {x: 0 for x in self._classmap}
+        logger.debug("ClassCounter init")
 
     def process(self):
         """Start processing."""
+        logger.debug("Started processing")
         self._add_fields()
         vdefn = self._outlyr.GetLayerDefn()
         for f in self._featurereader:
@@ -102,6 +103,7 @@ class ClassCounter:
                 field_index = vdefn.GetFieldIndex(name)
             assert field_index >= 0, "Could not create field %s" % name
             self._class_field_index[class_id] = field_index
+            logger.debug("Added field: '%s", name)
         # Field for total count
         field_index = vdefn.GetFieldIndex(self._total_field)
         if field_index < 0:
@@ -110,6 +112,7 @@ class ClassCounter:
             self._outlyr.CreateField(fd)
             self._total_field_index = vdefn.GetFieldIndex(self._total_field)
             field_index = vdefn.GetFieldIndex(self._total_field)
+            logger.debug("Added field: '%s", self._total_field)
         assert field_index >= 0, "Could not create field %s" % self._total_field
 
     def _count_classes_inside(self, geom):
@@ -165,6 +168,8 @@ class FeatureReader:
         self._clip = False
         self._bbox_filter = None
         self._clip_geom = None
+        self._iternum = 0
+        logger.debug("Init FeatureReader")
 
     def set_bbox_filter(self, bbox, clip=False):
         """Set bbox filter for read features.
@@ -189,14 +194,17 @@ class FeatureReader:
             if clip:
                 self._clip_geom = bbox_to_ogr_polygon(bbox)
                 self._clip_geom.AssignSpatialReference(self.srs)
+        logger.debug("Bbox set to %s. Clip: %s", bbox, clip)
         self.reset_reading()
 
     def reset_reading(self):
         """Rewinds reader to start."""
         self.lyr.ResetReading()
+        logger.debug("Reset reading")
 
     def __iter__(self):
         """Iterate over the features."""
+        self._iternum = 0
         return self
 
     def __next__(self):
@@ -204,6 +212,11 @@ class FeatureReader:
         feat = self.lyr.GetNextFeature()
         if feat is None:
             raise StopIteration
+
+        self._iternum += 1
+        if self._iternum == 1 or self._iternum % 1000 == 0:
+            logger.debug("Read %s", self._iternum)
+
         if self._clip:
             intersection = feat.geometry().Intersection(self._clip_geom)
             if intersection.IsEmpty():
@@ -229,6 +242,7 @@ def open_or_create_destination_datasource(dst_ds_name, dst_format=None, dsco=Non
         osgeo.ogr.DataSource: OGR datasource.
 
     """
+    logger.debug("Try to open '%s' for update", dst_ds_name)
     dst_ds = ogr.Open(dst_ds_name, update=1)
     if dst_ds is None:
         dst_ds = ogr.Open(dst_ds_name)
@@ -240,6 +254,7 @@ def open_or_create_destination_datasource(dst_ds_name, dst_format=None, dsco=Non
         drv = ogr.GetDriverByName(dst_format)
         if drv is None:
             raise Exception("Cannot find driver %s" % dst_format)
+        logger.debug("Try to create '%s'", dst_ds_name)
         dst_ds = drv.CreateDataSource(dst_ds_name, options=dsco or [])
         if dst_ds is None:
             raise Exception("Cannot create datasource '%s'" % dst_ds_name)
@@ -275,6 +290,7 @@ def open_or_create_similar_layer(src_lyr, dst_ds, dst_lyr_name=None, lco=None):
         if count == 1:
             lyr = dst_ds.GetLayer(0)
         else:
+            logger.debug("Creating layer 'surfclass'")
             lyr = dst_ds.CreateLayer(
                 "surfclass", src_lyr.GetSpatialRef(), src_lyr.GetGeomType(), lco or []
             )
@@ -282,6 +298,7 @@ def open_or_create_similar_layer(src_lyr, dst_ds, dst_lyr_name=None, lco=None):
     else:
         lyr = dst_ds.GetLayer(dst_lyr_name)
         if lyr is None:
+            logger.debug("Creating layer '%s'", dst_lyr_name)
             lyr = dst_ds.CreateLayer(
                 dst_lyr_name, src_lyr.GetSpatialRef(), src_lyr.GetGeomType(), lco or []
             )
@@ -310,3 +327,5 @@ def copy_fields(src_lyr, dst_lyr):
                 'Cannot create field "%s" in layer "%s"'
                 % (fld_defn.GetName(), dst_lyr.GetName())
             )
+        else:
+            logger.debug("Created attribute: %s", fld_defn.GetName())
