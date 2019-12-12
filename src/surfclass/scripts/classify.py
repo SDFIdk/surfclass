@@ -193,10 +193,10 @@ def randomforestndvi(
     class_prediction = classifier.classify(X)
     logger.debug("Finished classification")
 
-    output = np.zeros(mask.shape[0])
+    output = np.zeros(mask.shape[0], dtype="uint8")
 
     # Convert to byte array to save space
-    output[indices] = np.int8(class_prediction)
+    output[indices] = class_prediction.astype("uint8")
     output = output.reshape(_shape)
     name = f"{fileprefix}{filename}{filepostfix}.tif"
     outpath = str(pathlib.Path(outdir) / name)
