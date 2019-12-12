@@ -119,14 +119,15 @@ class RandomForest:
         # return the trained model
         return rf_trained
 
-    def classify(self, X):
+    def classify(self, X, prob=False):
         """Classify X using the instantiated RandomForestClassifier model.
 
         Args:
             X (np.array): 2D Matrix of feature observations.
+            prob (bool): If true returns tuple with classified vector and highest class probability vector
 
         Returns:
-            np.array: classified vector.
+            np.array or tuple (np.array,np.array): classified vector or tuple of classified vector and probability vector
 
         """
         assert (
@@ -146,6 +147,13 @@ class RandomForest:
         ), "Model and input does have the same number of features"
 
         # run the classificaiton using X
-        class_prediction = model.predict(X)
+        classes = self.model.classes_
+
+        class_prediction_prob = model.predict_proba(X)
+        class_prediction = classes[np.argmax(class_prediction_prob, axis=1)]
+
+        # return tuple with class prediction and highest class probability if prob
+        if prob:
+            return (class_prediction, np.amax(class_prediction_prob, axis=1))
 
         return class_prediction
