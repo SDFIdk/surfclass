@@ -26,17 +26,22 @@ def classify():
 @click.option("-f8", "--feature8", required=True, help="Pulse width Mean n=5")
 @click.option("-f9", "--feature9", required=True, help="Pulse width Var n=5")
 @click.option("-f10", "--feature10", required=True, help="ReturnNumber")
-@click.option("--prefix", default=None, required=False, help="Output file prefix")
-@click.option("--postfix", default=None, required=False, help="Output file postfix")
+@click.option(
+    "--prob",
+    default=None,
+    type=click.Path(exists=False, file_okay=True, dir_okay=False),
+    required=False,
+    help="File path for probability output raster",
+)
 @click.argument(
     "model",
-    type=click.Path(exists=True, dir_okay=False),
+    type=click.Path(exists=True, file_okay=True, dir_okay=False),
     # Allow just one model
     nargs=1,
 )
 @click.argument(
-    "outdir",
-    type=click.Path(exists=False, file_okay=False),
+    "output",
+    type=click.Path(exists=False, file_okay=True, dir_okay=False),
     # Allow just one output directory
     nargs=1,
 )
@@ -160,18 +165,19 @@ def randomforestndvi(
 @click.option(
     "--prob",
     default=None,
+    type=click.Path(exists=False, file_okay=True, dir_okay=False),
     required=False,
     help="File path for probability output raster",
 )
 @click.argument(
     "model",
-    type=click.Path(exists=True, dir_okay=False),
+    type=click.Path(exists=True, file_okay=True, dir_okay=False),
     # Allow just one model
     nargs=1,
 )
 @click.argument(
     "output",
-    type=click.Path(exists=False, file_okay=False),
+    type=click.Path(exists=False, file_okay=True, dir_okay=False),
     # Allow just one output directory
     nargs=1,
 )
