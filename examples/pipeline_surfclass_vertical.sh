@@ -31,11 +31,10 @@ surfclass -v DEBUG classify randomforestndvi -b ${BBOX} -f1 ./prepare/${PREFIX}_
                                                                      -f8 ./prepare/${PREFIX}_Pulsewidth_mean.tif \
                                                                      -f9 ./prepare/${PREFIX}_Pulsewidth_var.tif \
                                                                      -f10 ./prepare/${PREFIX}_ReturnNumber.tif \
-                                                                     --prefix ${PREFIX}_0_21_3 \
                                                                      ${MODEL} \
-                                                                     ./extract
+                                                                     ./extract/${PREFIX}_classification.tif
 # Extract step
-surfclass -v DEBUG extract denoise -b ${BBOX} ./extract/${PREFIX}_0_21_3classification.tif ./extract/${PREFIX}_denoised.tif
+surfclass -v DEBUG extract denoise -b ${BBOX} ./extract/${PREFIX}_classification.tif ./extract/${PREFIX}_denoised.tif
 surfclass -v DEBUG extract count --in ${PREFIX}_polygon.geojson --out ./extract/${PREFIX}_polygon_out.geojson --format geojson --clip --classrange 0 5 ./extract/${PREFIX}_denoised.tif
 end_time=`date +%s`
 echo execution time was `expr $end_time - $start_time` s.

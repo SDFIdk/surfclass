@@ -1,5 +1,4 @@
 import logging
-import pathlib
 import click
 import numpy as np
 from surfclass.scripts import options
@@ -12,74 +11,7 @@ logger = logging.getLogger(__name__)
 
 @click.group()
 def classify():
-    """Surface classify raster"""
-
-
-@classify.command()
-@options.bbox_opt(required=True)
-@click.option("-f1", "--feature1", required=True, help="Amplitude")
-@click.option("-f2", "--feature2", required=True, help="Diffmean Amplitude n=3")
-@click.option("-f3", "--feature3", required=True, help="Mean Amplitude n=3")
-@click.option("-f4", "--feature4", required=True, help="Var Amplitude n=3")
-@click.option("--prefix", default=None, required=False, help="Output file prefix")
-@click.option("--postfix", default=None, required=False, help="Output file postfix")
-@click.argument("model", type=click.Path(exists=True, dir_okay=False))
-@click.argument("outdir", type=click.Path(exists=False, file_okay=False), nargs=1)
-def testmodel1(
-    feature1, feature2, feature3, feature4, model, outdir, bbox, prefix, postfix
-):
-    r""" TEST:
-    Create a surface classified raster using a set of input features and a trained RandomForest model.
-
-    The input features must match exactly as described and in the correct order.
-
-    Example surfclass classify randomforestndvi -b 721000 6150000 722000 6151000 -f1 1km_6150_721_Amplitude.tif
-    -f2 1km_6150_721_Amplitude_diffmean.tif -f3 1km_6150_721_Amplitude_mean.tif -f4 1km_6150_721_Amplitude_var.tif
-    testmodel1.sav c:\outdir\
-    """
-    # Log inputs
-    logger.debug(
-        "Classification with testmodel1 started with arguments: %s, %s, %s, %s, %s, %s, %s, %s",
-        feature1,
-        feature2,
-        feature3,
-        feature4,
-        model,
-        outdir,
-        prefix,
-        postfix,
-    )
-    filename = "classification"
-    fileprefix = prefix or ""
-    filepostfix = postfix or ""
-    # Make sure output dir exists
-    pathlib.Path(outdir).mkdir(parents=True, exist_ok=True)
-
-    # Read the input rasters and stack them into an np.ndarray
-    features = [feature1, feature2, feature3, feature4]
-    (X, mask, geotransform, srs, _shape) = stack_rasters(features, bbox)
-    indices = np.where(mask)[0]
-    # Instantiate the RandomForest model
-    classifier = RandomForest(len(features), model=model)
-
-    # Classify X using the instantiated RandomForest model
-    logger.debug("Starting classification")
-    class_prediction = classifier.classify(X)
-    logger.debug("Finished classification")
-
-    output = np.zeros(mask.shape[0], dtype="uint8")
-
-    # Convert to byte array to save space
-    output[indices] = np.uint8(class_prediction)
-    output = output.reshape(_shape)
-    name = f"{fileprefix}{filename}{filepostfix}.tif"
-    outpath = str(pathlib.Path(outdir) / name)
-
-    # Get origin and resolution from geotransform
-    origin = (geotransform[0], geotransform[3])
-    resolution = geotransform[1]
-    logger.debug("Writing classification output here: %s", outpath)
-    write_to_file(outpath, output, origin, resolution, srs, nodata=0)
+    """Surface classify raster."""
 
 
 @classify.command()
@@ -94,17 +26,22 @@ def testmodel1(
 @click.option("-f8", "--feature8", required=True, help="Pulse width Mean n=5")
 @click.option("-f9", "--feature9", required=True, help="Pulse width Var n=5")
 @click.option("-f10", "--feature10", required=True, help="ReturnNumber")
-@click.option("--prefix", default=None, required=False, help="Output file prefix")
-@click.option("--postfix", default=None, required=False, help="Output file postfix")
+@click.option(
+    "--prob",
+    default=None,
+    type=click.Path(exists=False, file_okay=True, dir_okay=False),
+    required=False,
+    help="File path for probability output raster",
+)
 @click.argument(
     "model",
-    type=click.Path(exists=True, dir_okay=False),
+    type=click.Path(exists=True, file_okay=True, dir_okay=False),
     # Allow just one model
     nargs=1,
 )
 @click.argument(
-    "outdir",
-    type=click.Path(exists=False, file_okay=False),
+    "output",
+    type=click.Path(exists=False, file_okay=True, dir_okay=False),
     # Allow just one output directory
     nargs=1,
 )
@@ -120,10 +57,9 @@ def randomforestndvi(
     feature9,
     feature10,
     model,
-    outdir,
     bbox,
-    prefix,
-    postfix,
+    prob,
+    output,
 ):
     r"""
     RandomForestNDVI
@@ -143,7 +79,9 @@ def randomforestndvi(
                                                                      -f9 1km_6150_721_Pulsewidth_var.tif
                                                                      -f10 1km_6171_727_ReturnNumber.tif
                                                                      A5_NDVI5_P5_R_NT400_1km_6171_727_40cm_predicted.sav
-                                                                     c:\outdir\
+                                                                     --prob ./classified_prob.tif
+                                                                     genericmodel.sav
+                                                                     ./classified.tif
     """
     # Log inputs
     logger.debug(
@@ -159,16 +97,10 @@ def randomforestndvi(
         feature9,
         feature10,
         model,
-        outdir,
-        prefix,
-        postfix,
+        bbox,
+        prob,
+        output,
     )
-
-    filename = "classification"
-    fileprefix = prefix or ""
-    filepostfix = postfix or ""
-    # Make sure output dir exists
-    pathlib.Path(outdir).mkdir(parents=True, exist_ok=True)
 
     # Read the input rasters and stack them into an np.ndarray
     features = [
@@ -183,6 +115,7 @@ def randomforestndvi(
         feature9,
         feature10,
     ]
+
     (X, mask, geotransform, srs, _shape) = stack_rasters(features, bbox)
     indices = np.where(mask)[0]
     # Instantiate the RandomForest model
@@ -190,22 +123,32 @@ def randomforestndvi(
 
     # Classify X using the instantiated RandomForest model
     logger.debug("Starting classification")
-    class_prediction = classifier.classify(X)
+
+    class_prob = None
+    if prob is not None:
+        class_prediction, class_prob = classifier.classify(X, prob=True)
+    else:
+        class_prediction = classifier.classify(X)
+
     logger.debug("Finished classification")
 
-    output = np.zeros(mask.shape[0], dtype="uint8")
-
+    classified = np.zeros(mask.shape[0], dtype="uint8")
     # Convert to byte array to save space
-    output[indices] = class_prediction.astype("uint8")
-    output = output.reshape(_shape)
-    name = f"{fileprefix}{filename}{filepostfix}.tif"
-    outpath = str(pathlib.Path(outdir) / name)
+    classified[indices] = class_prediction.astype("uint8")
+    classified = classified.reshape(_shape)
 
     # Get origin and resolution from geotransform
     origin = (geotransform[0], geotransform[3])
     resolution = geotransform[1]
-    logger.debug("Writing classification output here: %s", outpath)
-    write_to_file(outpath, output, origin, resolution, srs, nodata=0)
+    logger.debug("Writing classification output here: %s", output)
+    write_to_file(output, classified, origin, resolution, srs, nodata=0)
+
+    if class_prob is not None:
+        max_prob = np.zeros(mask.shape[0], dtype="float32")
+        max_prob[indices] = class_prob.astype("float32")
+        max_prob = max_prob.reshape(_shape)
+        logger.debug("Writing classification probability output here: %s", prob)
+        write_to_file(prob, max_prob, origin, resolution, srs, nodata=0)
 
 
 @classify.command()
@@ -219,21 +162,26 @@ def randomforestndvi(
     required=True,
     help="Feature raster file. Multiple allowed. NOTE: Order is important!!!",
 )
-@click.option("--prefix", default=None, required=False, help="Output file prefix")
-@click.option("--postfix", default=None, required=False, help="Output file postfix")
+@click.option(
+    "--prob",
+    default=None,
+    type=click.Path(exists=False, file_okay=True, dir_okay=False),
+    required=False,
+    help="File path for probability output raster",
+)
 @click.argument(
     "model",
-    type=click.Path(exists=True, dir_okay=False),
+    type=click.Path(exists=True, file_okay=True, dir_okay=False),
     # Allow just one model
     nargs=1,
 )
 @click.argument(
-    "outdir",
-    type=click.Path(exists=False, file_okay=False),
+    "output",
+    type=click.Path(exists=False, file_okay=True, dir_okay=False),
     # Allow just one output directory
     nargs=1,
 )
-def genericmodel(rasterfiles, model, outdir, bbox, prefix, postfix):
+def genericmodel(rasterfiles, model, bbox, prob, output):
     r"""
     Generic Model
 
@@ -253,28 +201,22 @@ def genericmodel(rasterfiles, model, outdir, bbox, prefix, postfix):
                                                                      -f 1km_6150_721_Pulsewidth_mean.tif
                                                                      -f 1km_6150_721_Pulsewidth_var.tif
                                                                      -f 1km_6171_727_ReturnNumber.tif
+                                                                     --prob ./classified_prob.tif
                                                                      genericmodel.sav
-                                                                     c:\outdir\
+                                                                     ./classified.tif
     """
     # Log inputs
     logger.debug(
         "Classification with model %s started with arguments: %s, %s, %s",
         model,
-        outdir,
-        prefix,
-        postfix,
+        bbox,
+        output,
+        prob,
     )
-
     # Print feature order. This is important.
     click.echo("Classifying using %s with features:" % model)
     for i, fp in enumerate(rasterfiles):
         click.echo(f"f{i+1}: {fp}")
-
-    filename = "classification"
-    fileprefix = prefix or ""
-    filepostfix = postfix or ""
-    # Make sure output dir exists
-    pathlib.Path(outdir).mkdir(parents=True, exist_ok=True)
 
     # Read the input rasters and stack them into an np.ndarray
     features = rasterfiles
@@ -286,19 +228,29 @@ def genericmodel(rasterfiles, model, outdir, bbox, prefix, postfix):
 
     # Classify X using the instantiated RandomForest model
     logger.debug("Starting classification")
-    class_prediction = classifier.classify(X)
+
+    class_prob = None
+    if prob is not None:
+        class_prediction, class_prob = classifier.classify(X, prob=True)
+    else:
+        class_prediction = classifier.classify(X)
+
     logger.debug("Finished classification")
 
-    output = np.zeros(mask.shape[0], dtype="uint8")
-
+    classified = np.zeros(mask.shape[0], dtype="uint8")
     # Convert to byte array to save space
-    output[indices] = class_prediction.astype("uint8")
-    output = output.reshape(_shape)
-    name = f"{fileprefix}{filename}{filepostfix}.tif"
-    outpath = str(pathlib.Path(outdir) / name)
+    classified[indices] = class_prediction.astype("uint8")
+    classified = classified.reshape(_shape)
 
     # Get origin and resolution from geotransform
     origin = (geotransform[0], geotransform[3])
     resolution = geotransform[1]
-    logger.debug("Writing classification output here: %s", outpath)
-    write_to_file(outpath, output, origin, resolution, srs, nodata=0)
+    logger.debug("Writing classification output here: %s", output)
+    write_to_file(output, classified, origin, resolution, srs, nodata=0)
+
+    if class_prob is not None:
+        max_prob = np.zeros(mask.shape[0], dtype="float32")
+        max_prob[indices] = class_prob.astype("float32")
+        max_prob = max_prob.reshape(_shape)
+        logger.debug("Writing classification probability output here: %s", prob)
+        write_to_file(prob, max_prob, origin, resolution, srs, nodata=0)

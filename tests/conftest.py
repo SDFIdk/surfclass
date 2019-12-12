@@ -36,10 +36,10 @@ def amplituderaster_filepath(data_dir):
 
 
 @pytest.fixture(scope="session")
-def testmodel1_filepath(data_dir):
-    return Path(data_dir).joinpath("classification_data/testmodel1.sav")
+def genericmodel_filepath(data_dir):
+    return Path(data_dir).joinpath("classification_data/genericmodel.sav")
 
 
 @pytest.fixture(scope="session")
-def testmodel1_traindata_filepath(data_dir):
-    return Path(data_dir).joinpath("classification_data/testmodel1_train.npz")
+def genericmodel_traindata_filepath(data_dir):
+    return Path(data_dir).joinpath("classification_data/genericmodel_train.npz")
