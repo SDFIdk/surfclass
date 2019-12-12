@@ -78,4 +78,3 @@ def test_cli_classify_genericmodel_prob(cli_runner, genericmodel_filepath, tmp_p
 
     # This is a hole in the mask, and should always be nodata which is 0
     assert prediction_prob[3, 2] == int(nodata) == 0
-
