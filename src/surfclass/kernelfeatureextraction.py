@@ -1,7 +1,10 @@
 """Extract feature using a kernel."""
+import logging
 from pathlib import Path
 import numpy as np
 from surfclass import rasterio, Bbox
+
+logger = logging.getLogger(__name__)
 
 as_strided = np.lib.stride_tricks.as_strided
 
@@ -139,6 +142,7 @@ class KernelFeatureExtraction:
         )
 
         for feat_name in self.outputfeatures:
+            logger.debug("Calulating %s", feat_name)
             if feat_name == "mean":
                 yield np.ma.masked_array(
                     np.ma.mean(masked_values, axis=2).astype("float32"),
@@ -219,6 +223,8 @@ class KernelFeatureExtraction:
         """Calculate features and write to disk."""
         # Figure out the new origin based on crop_mode and neighborhood
         # If there is no crop, origin is simply UL
+        logger.debug("KernelFeatureExtraction started in %s mode", self.crop_mode)
+
         if self.crop_mode == "crop":
             crop_amount = (
                 int((self.neighborhood - 1) / 2) * self.rasterreader.resolution
