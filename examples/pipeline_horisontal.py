@@ -13,14 +13,16 @@ for e in e_range:
         tiles.append((n, e))
 
 
+out_dir = Path("./tmp4")
 las_dir = Path(
     "/Volumes/Macintosh HD/Volumes/GoogleDrive/My Drive/Septima - Ikke synkroniseret/Projekter/SDFE/Befæstelse/data/trænings_las"
 )
 orto_dir = Path(
     "/Volumes/Macintosh HD/Volumes/GoogleDrive/My Drive/Septima - Ikke synkroniseret/Projekter/SDFE/Befæstelse/data/ortofoto"
 )
-modelfile = "/Volumes/Macintosh HD/Volumes/GoogleDrive/My Drive/Septima - Ikke synkroniseret/Projekter/SDFE/Befæstelse/train_test/randomforestndvi2.model"
-out_dir = Path("./tmp2")
+modelfile = Path(
+    "/Volumes/Macintosh HD/Volumes/GoogleDrive/My Drive/Septima - Ikke synkroniseret/Projekter/SDFE/Befæstelse/train_test/traindata_diffmean.npz"
+)
 dimensions = ["Amplitude", "Pulsewidth", "ReturnNumber"]
 geodkdb = "/Volumes/Macintosh HD/Volumes/GoogleDrive/My Drive/Septima - Ikke synkroniseret/Projekter/SDFE/Befæstelse/data/geodk.gpkg"
 
@@ -152,24 +154,25 @@ for t in tiles:
     kvnet = "1km_%s_%s" % (n, e)
     bbox = (e * 1000, n * 1000, e * 1000 + 1000, n * 1000 + 1000)
     dstfile = out_dir / ("%s_classification.tif" % kvnet)
+    probfile = out_dir / ("%s_classification_prob.tif" % kvnet)
     if dstfile.exists():
         print("%s exists. Skipping" % dstfile)
         continue
     args = ["surfclass", "classify", "randomforestndvi"]
     args += ["--bbox"] + [str(x) for x in bbox]
-    args += ["-f1", out_dir / "Amplitude.vrt"]
+    args += ["-f1", out_dir / "Amplitude_diffmean.vrt"]
     args += ["-f2", out_dir / "Amplitude_mean.vrt"]
     args += ["-f3", out_dir / "Amplitude_var.vrt"]
-    args += ["-f4", out_dir / "ndvi.vrt"]
+    args += ["-f4", out_dir / "ndvi_diffmean.vrt"]
     args += ["-f5", out_dir / "ndvi_mean.vrt"]
     args += ["-f6", out_dir / "ndvi_var.vrt"]
-    args += ["-f7", out_dir / "pulsewidth.vrt"]
+    args += ["-f7", out_dir / "pulsewidth_diffmean.vrt"]
     args += ["-f8", out_dir / "pulsewidth_mean.vrt"]
     args += ["-f9", out_dir / "pulsewidth_var.vrt"]
     args += ["-f10", out_dir / "returnnumber.vrt"]
-    args += ["--prefix", "%s_" % kvnet]
+    args += ["--prob", probfile]
     args += [modelfile]
-    args += [out_dir]
+    args += [dstfile]
     print("Running: ", args)
     subprocess.run(args, check=True)
 
@@ -177,12 +180,21 @@ for t in tiles:
 print("Make GDAL vrts for classified")
 args = ["gdalbuildvrt"]
 args += ["-resolution", "user"]
-# Cover entire DK + margin
 args += ["-tap"]
 args += ["-tr", "0.4", "0.4"]
 args += ["-te", "440000", "6048000", "895000", "6404000"]
 args += [str(out_dir / "classification.vrt")]  # Output vrt
 args += [str(out_dir / "1km_*_classification.tif")]  # Input files
+print("Running: ", args)
+subprocess.Popen(" ".join(args), shell=True).wait()
+# Probability
+args = ["gdalbuildvrt"]
+args += ["-resolution", "user"]
+args += ["-tap"]
+args += ["-tr", "0.4", "0.4"]
+args += ["-te", "440000", "6048000", "895000", "6404000"]
+args += [str(out_dir / "classification_prob.vrt")]  # Output vrt
+args += [str(out_dir / "1km_*_classification_prob.tif")]  # Input files
 print("Running: ", args)
 subprocess.Popen(" ".join(args), shell=True).wait()
 
