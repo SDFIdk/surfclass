@@ -1,6 +1,9 @@
 """Tools for training models."""
+import logging
 import numpy as np
 from surfclass import rasterio, vectorize
+
+logger = logging.getLogger(__name__)
 
 
 def collect_training_data(poly_dataset, poly_layer, class_attribute, raster_paths):
@@ -25,6 +28,13 @@ def collect_training_data(poly_dataset, poly_layer, class_attribute, raster_path
     """
     # pylint: disable=E1136
     # Disable false classes.shape[0] is unsubscriptable
+    logger.debug(
+        "Collecting training data. Vector ds: '%s', Layer: '%s', Class attribute: '%s', Rasters: '%s'",
+        poly_dataset,
+        poly_layer,
+        class_attribute,
+        raster_paths,
+    )
     f_paths = [str(p) for p in raster_paths]
     raster_readers = [rasterio.MaskedRasterReader(x) for x in f_paths]
     bbox = raster_readers[0].bbox
@@ -84,6 +94,7 @@ def collect_training_data(poly_dataset, poly_layer, class_attribute, raster_path
     assert features.shape[1] == len(
         f_paths
     ), "Features array does not have an entry per input feature"
+    logger.debug("Collected training data: %s, %s", classes, features)
     return (classes, features)
 
 

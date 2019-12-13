@@ -67,6 +67,18 @@ class LidarRasterizer:
         self.dimensions = self._validate_dimensions(dimensions)
         self.pipeline = self._create_pipeline()
         self.srs = srs
+        logger.debug(
+            "LidarRasterizer init. Outdir: '%s'. Prefix: '%s'. Postfix: '%s' "
+            "Resolution: %s. Bbox: %s. Dimensions: %s. Files: %s. Pdal pipeline: [%s]",
+            self.outdir,
+            self.fileprefix,
+            self.filepostfix,
+            self.resolution,
+            self.bbox,
+            self.dimensions,
+            self.lidarfiles,
+            self.pipeline,
+        )
 
     def start(self):
         """Starts the processing.
@@ -106,6 +118,7 @@ class LidarRasterizer:
         sampler = lidar.GridSampler(points, self.bbox, self.resolution)
         origin = (self.bbox.xmin, self.bbox.ymax)
         for dim in self.dimensions:
+            logger.debug("Gridding: %s", dim)
             nodata = dimension_nodata[dim]
             outfile = self._output_filename(dim)
             grid = sampler.make_grid(dim, nodata, masked=False)

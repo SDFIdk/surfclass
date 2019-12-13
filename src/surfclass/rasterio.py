@@ -1,8 +1,11 @@
 """IO for raster files."""
 # pylint: disable=R0916
+import logging
 from osgeo import gdal, ogr, osr
 import numpy as np
 from surfclass import Bbox
+
+logger = logging.getLogger(__name__)
 
 gdal_int_options = ["TILED=YES", "COMPRESS=deflate"]
 gdal_float_options = ["TILED=YES", "COMPRESS=deflate"]
@@ -45,6 +48,14 @@ class RasterReader:
         assert (
             self.geotransform[2] == self.geotransform[4] == 0
         ), "Rotated rasters are not supported"
+
+        logger.debug(
+            "Opened: '%s'. Geotransform: %s. Nodata: %s. Shape: %s",
+            raster_path,
+            self.geotransform,
+            self.nodata,
+            self.shape,
+        )
 
     @property
     def srs(self):
@@ -159,6 +170,7 @@ class RasterReader:
         ):
             raise ValueError(f"Window outside raster requested. Window: {src_offset}")
 
+        logger.debug("Reading window: %s", src_offset)
         src_array = self._band.ReadAsArray(*src_offset)
 
         if src_offset[2] <= 0 or src_offset[3] <= 0:
@@ -281,9 +293,11 @@ def write_to_file(filename, array, origin, resolution, srs, nodata=None):
     dtype = array.dtype
     gdal_type = dtype_to_gdaltype(dtype)
     gdal_options = gdaltype_to_creationoptions(gdal_type)
+    geotransform = (originX, resolution, 0, originY, 0, -1 * resolution)
+
     driver = gdal.GetDriverByName("GTiff")
     ds = driver.Create(filename, cols, rows, 1, gdal_type, options=gdal_options)
-    ds.SetGeoTransform((originX, resolution, 0, originY, 0, -1 * resolution))
+    ds.SetGeoTransform(geotransform)
     band = ds.GetRasterBand(1)
 
     if nodata is None and np.ma.is_masked(array):
@@ -301,6 +315,13 @@ def write_to_file(filename, array, origin, resolution, srs, nodata=None):
     if not isinstance(srs, osr.SpatialReference):
         raise ValueError("srs must be either EPSG code or a SpatialReference object")
 
+    logger.debug(
+        "Writing file '%s'. Geotransform: %s. Nodata: %s. Shape: %s",
+        filename,
+        geotransform,
+        nodata,
+        array.shape,
+    )
     band.WriteArray(array)
     ds.SetProjection(srs.ExportToWkt())
     band.FlushCache()
