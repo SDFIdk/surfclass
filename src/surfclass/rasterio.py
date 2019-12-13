@@ -316,10 +316,11 @@ def write_to_file(filename, array, origin, resolution, srs, nodata=None):
         raise ValueError("srs must be either EPSG code or a SpatialReference object")
 
     logger.debug(
-        "Writing file '%s'. Geotransform: %s. Nodata: %s",
+        "Writing file '%s'. Geotransform: %s. Nodata: %s. Shape: %s",
         filename,
         geotransform,
         nodata,
+        array.shape,
     )
     band.WriteArray(array)
     ds.SetProjection(srs.ExportToWkt())
