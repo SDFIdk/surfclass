@@ -163,7 +163,7 @@ def gdal_vrt_derived(out_dir):
 
 
 def prep_train_data(out_dir):
-    dstfile = out_dir / "traindata.npz"
+    dstfile = out_dir / "traindata_diffmean.npz"
     if dstfile.exists():
         print("Traindata %s exists. Skipping" % dstfile)
         return
@@ -172,13 +172,13 @@ def prep_train_data(out_dir):
     args += ["--inlyr", train_lyr]
     args += ["-a", train_class_attribute]
     for f in [
-        "Amplitude",
+        "Amplitude_diffmean",
         "Amplitude_mean",
         "Amplitude_var",
-        "ndvi",
+        "ndvi_diffmean",
         "ndvi_mean",
         "ndvi_var",
-        "Pulsewidth",
+        "Pulsewidth_diffmean",
         "Pulsewidth_mean",
         "Pulsewidth_var",
         "ReturnNumber",
@@ -190,8 +190,8 @@ def prep_train_data(out_dir):
 
 
 def train_model(out_dir):
-    datafile = out_dir / "traindata.npz"
-    modelfile = out_dir / "trained.model"
+    datafile = out_dir / "traindata_diffmean.npz"
+    modelfile = out_dir / "trained_diffmean.model"
     if modelfile.exists():
         print("Model %s found. Skipping" % modelfile)
         return
@@ -213,5 +213,7 @@ if __name__ == "__main__":
     process_derived(tiles, out_dir)
     gdal_vrt_derived(out_dir)
 
+    # Collect training data
     prep_train_data(out_dir)
+    # Train model
     train_model(out_dir)
