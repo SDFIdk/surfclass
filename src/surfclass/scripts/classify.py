@@ -62,11 +62,13 @@ def randomforestndvi(
     output,
 ):
     r"""
-    RandomForestNDVI
+    Classify using a pre-defined randomforstndvi model
 
-    Create a surface classified raster using a set of input features and a trained RandomForest model.
+    Features are defined in order by the -f1 ... -f10 parameters. The bbox describes the extent of the output of the classified
+    result.
 
-    The input features must match exactly as described and in the correct order.
+    The input features must match the model provided both in order and number of features. Add "-v INFO" to check that
+    the order of the input rasters meet expectations.
 
     Example:  surfclass classify randomforestndvi -b 721000 6150000 722000 6151000 -f1 1km_6150_721_Amplitude.tif
                                                                      -f2 1km_6150_721_Amplitude_mean.tif
@@ -78,9 +80,8 @@ def randomforestndvi(
                                                                      -f8 1km_6150_721_Pulsewidth_mean.tif
                                                                      -f9 1km_6150_721_Pulsewidth_var.tif
                                                                      -f10 1km_6171_727_ReturnNumber.tif
-                                                                     A5_NDVI5_P5_R_NT400_1km_6171_727_40cm_predicted.sav
                                                                      --prob ./classified_prob.tif
-                                                                     genericmodel.sav
+                                                                     A5_NDVI5_P5_R_NT400_1km_6171_727_40cm_predicted.sav
                                                                      ./classified.tif
     """
     # Log inputs
@@ -183,12 +184,13 @@ def randomforestndvi(
 )
 def genericmodel(rasterfiles, model, bbox, prob, output):
     r"""
-    Generic Model
+    Classify using a generic model.
 
-    Create a surface classified raster using a set of input features and a trained RandomForest model.
+    Features are defined in order by the -f parameter. The bbox describes the extent of the output of the classified
+    result.
 
-    The input features must match the model provided. Add "-v INFO" to check that the order of the input
-    rasters meet expectations
+    The input features must match the model provided both in order and number of features. Add "-v INFO" to check that
+    the order of the input rasters meet expectations.
 
     Example:  surfclass classify genericmodel -b 721000 6150000 722000 6151000
                                                                      -f 1km_6150_721_Amplitude.tif
@@ -204,6 +206,7 @@ def genericmodel(rasterfiles, model, bbox, prob, output):
                                                                      --prob ./classified_prob.tif
                                                                      genericmodel.sav
                                                                      ./classified.tif
+
     """
     # Log inputs
     logger.debug(
