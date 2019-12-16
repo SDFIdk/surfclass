@@ -58,7 +58,7 @@ def test_cli_classify_genericmodel_prob(cli_runner, genericmodel_filepath, tmp_p
 
     # f1 ... f4 are mapped to the multiple argument -f
     args = (
-        f"classify genericmodel -b 727000 6171000 728000 6172000 -f {f1} "
+        f"classify genericmodel -b 727000 6171000 728000 6172000 --processors -2 -f {f1} "
         f"-f {f2} -f {f3} -f {f4} {genericmodel_filepath} --prob {tmp_path}/classification_prob.tif {tmp_path}/classification.tif"
     )
     result = cli_runner.invoke(cli, args.split(" "), catch_exceptions=False)
