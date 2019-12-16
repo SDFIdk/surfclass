@@ -12,23 +12,25 @@
 
 import subprocess
 from pathlib import Path
+import pkg_resources
 import shutil
 
 tiles = [(6167, 729), (6171, 727), (6176, 724), (6184, 720), (6211, 689), (6220, 717)]
 
-out_dir = Path("tmp3")
+# paths are examples, change these to absolute paths
+out_dir = Path(r".\Surfclass_workshop\tmp_out")
 dimensions = ["Amplitude", "Pulsewidth", "ReturnNumber"]
 
-las_dir = Path(
-    "/Volumes/Macintosh HD/Volumes/GoogleDrive/My Drive/Septima - Ikke synkroniseret/Projekter/SDFE/Befæstelse/data/trænings_las"
-)
-orto_dir = Path(
-    "/Volumes/Macintosh HD/Volumes/GoogleDrive/My Drive/Septima - Ikke synkroniseret/Projekter/SDFE/Befæstelse/data/ortofoto"
-)
+las_dir = Path(r".\Surfclass_workshop\las")
+orto_dir = Path(r".\data\ortofoto")
 
-train_ds = "/Volumes/Macintosh HD/Volumes/GoogleDrive/My Drive/Septima - Ikke synkroniseret/Projekter/SDFE/Befæstelse/train_test/train_polys_all.gpkg"
+train_ds = Path(r".\Surfclass_workshop\train_polys_all.gpkg")
 train_lyr = "train_polys_all"
 train_class_attribute = "class"
+
+# TODO: Figure out how to get this particular path on Windows
+# Change this path to whereever your gdal_calc.py file resides
+gdal_calc_path = r"USER_DIR\Anaconda3\envs\surfclass\Scripts\gdal_calc.py"
 
 
 def process_lidar(tiles, las_dir, out_dir):
@@ -68,7 +70,8 @@ def gdal_vrt_lidar(dimensions, out_dir):
         args += ["-tr", "0.4", "0.4"]
         args += ["-te", "440000", "6048000", "895000", "6404000"]
         args += ["%s/%s.vrt" % (out_dir, d)]  # Output vrt
-        args += ["%s/*_%s.tif" % (out_dir, d)]  # Input files
+        args += [str(x) for x in out_dir.glob("*_%s.tif" % d)]
+        # args += ["%s/*_%s.tif" % (out_dir, d)]  # Input files
         print("Running: ", args)
         subprocess.Popen(" ".join(args), shell=True).wait()
 
@@ -87,18 +90,19 @@ def process_ndvi(tiles, orto_dir, out_dir):
         args = ["gdal_translate"]
         args += ["-co", "tiled=yes", "-co", "compress=deflate"]
         args += ["-tr", "0.4", "0.4"]
-        args += [srcfile, tmpfile]
+        args += [str(srcfile), str(tmpfile)]
         print("Running: ", args)
         subprocess.run(args, check=True)
         # Calculate ndvi
-        args = ["gdal_calc.py"]
-        args += ["-A", tmpfile, "--A_band=4"]
-        args += ["-B", tmpfile, "--B_band=1"]
+        args = ["python"]
+        args += [gdal_calc_path]
+        args += ["-A", str(tmpfile), "--A_band=4"]
+        args += ["-B", str(tmpfile), "--B_band=1"]
         args += ["--creation-option", "compress=deflate"]
         args += ["--creation-option", "tiled=true"]
         args += ["--type", "Float32"]
         args += ["--calc", "(A.astype(float)-B)/(A.astype(float)+B)"]
-        args += ["--outfile", dstfile]
+        args += ["--outfile", str(dstfile)]
         print("Running: ", args)
         subprocess.run(args, check=True)
         tmpfile.unlink()
@@ -113,7 +117,8 @@ def gdal_vrt_ndvi(out_dir):
     args += ["-tr", "0.4", "0.4"]
     args += ["-te", "440000", "6048000", "895000", "6404000"]
     args += [str(out_dir / "ndvi.vrt")]  # Output vrt
-    args += [str(out_dir / "1km_*_ndvi.tif")]  # Input files
+    # args += [str(out_dir / "1km_*_ndvi.tif")]  # Input files
+    args += [str(x) for x in out_dir.glob("1km_*_ndvi.tif")]
     print("Running: ", args)
     subprocess.Popen(" ".join(args), shell=True).wait()
 
@@ -157,7 +162,9 @@ def gdal_vrt_derived(out_dir):
             args += ["-tr", "0.4", "0.4"]
             args += ["-te", "440000", "6048000", "895000", "6404000"]
             args += [str(out_dir / ("%s_%s.vrt" % (d, m)))]  # Output vrt
-            args += [str(out_dir / ("*_%s_%s.tif" % (d, m)))]  # Input files
+            # args += [str(out_dir / ("*_%s_%s.tif" % (d, m)))]  # Input files
+            args += [str(x) for x in out_dir.glob("*_%s_%s.tif" % (d, m))]
+
             print("Running: ", args)
             subprocess.Popen(" ".join(args), shell=True).wait()
 
@@ -168,7 +175,7 @@ def prep_train_data(out_dir):
         print("Traindata %s exists. Skipping" % dstfile)
         return
     args = ["surfclass", "prepare", "traindata"]
-    args += ["--in", train_ds]
+    args += ["--in", str(train_ds)]
     args += ["--inlyr", train_lyr]
     args += ["-a", train_class_attribute]
     for f in [
@@ -183,8 +190,8 @@ def prep_train_data(out_dir):
         "Pulsewidth_var",
         "ReturnNumber",
     ]:
-        args += ["-f", out_dir / ("%s.vrt" % f)]
-    args += [dstfile]
+        args += ["-f", str(out_dir / ("%s.vrt" % f))]
+    args += [str(dstfile)]
     print("Running: ", args)
     subprocess.run(args, check=True)
 
@@ -195,7 +202,7 @@ def train_model(out_dir):
     if modelfile.exists():
         print("Model %s found. Skipping" % modelfile)
         return
-    args = ["surfclass", "train", "genericmodel", datafile, modelfile]
+    args = ["surfclass", "train", "genericmodel", str(datafile), str(modelfile)]
     print("Running: ", args)
     subprocess.run(args, check=True)
 
