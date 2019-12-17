@@ -20,19 +20,28 @@ for e in e_range:
         tiles.append((n, e))
 
 
-out_dir = Path("./tmp4")
+# paths are examples, change these to absolute paths
+out_dir = Path(r"C:\Users\Nicol\Desktop\Surfclass_workshop\tmp_out_16")
 las_dir = Path(
-    "/Volumes/Macintosh HD/Volumes/GoogleDrive/My Drive/Septima - Ikke synkroniseret/Projekter/SDFE/Befæstelse/data/trænings_las"
+    r"G:\Mit drev\Septima - Ikke synkroniseret\Projekter\SDFE\Befæstelse\data\trænings_las"
 )
 orto_dir = Path(
-    "/Volumes/Macintosh HD/Volumes/GoogleDrive/My Drive/Septima - Ikke synkroniseret/Projekter/SDFE/Befæstelse/data/ortofoto"
+    r"G:\Mit drev\Septima - Ikke synkroniseret\Projekter\SDFE\Befæstelse\data\ortofoto"
 )
 modelfile = Path(
-    "/Volumes/Macintosh HD/Volumes/GoogleDrive/My Drive/Septima - Ikke synkroniseret/Projekter/SDFE/Befæstelse/train_test/randomforestndvi2.model"
+    r"G:\Mit drev\Septima - Ikke synkroniseret\Projekter\SDFE\Befæstelse\train_test\randomforestndvi2.model"
 )
 
 dimensions = ["Amplitude", "Pulsewidth", "ReturnNumber"]
-geodkdb = "/Volumes/Macintosh HD/Volumes/GoogleDrive/My Drive/Septima - Ikke synkroniseret/Projekter/SDFE/Befæstelse/data/geodk.gpkg"
+
+# TODO: Figure out how to get this particular path on Windows
+# Change this path to whereever your gdal_calc.py file resides
+gdal_calc_path = r"C:\Users\Nicol\Anaconda3\envs\surfclass\Scripts\gdal_calc.py"
+
+# GeoDanmark database, used for burning in lakes and buildings in denoised output
+geodkdb = Path(
+    r"G:\Mit drev\Septima - Ikke synkroniseret\Projekter\SDFE\Befæstelse\data\geodk.gpkg"
+)
 
 
 # Do all lidar gridding
@@ -53,6 +62,9 @@ def process_lidar_tile(t):
     args += [las_dir / (kvnet + ".las")]
     args += [out_dir]
     print("Running: ", args)
+
+    # Windows specific str casting of WindowsPaths
+    args = list(map(str, args))
     subprocess.run(args, check=True)
 
 
@@ -69,8 +81,10 @@ for d in dimensions:
     args += ["-tr", "0.4", "0.4"]
     args += ["-te", "440000", "6048000", "895000", "6404000"]
     args += ["%s/%s.vrt" % (out_dir, d)]  # Output vrt
-    args += ["%s/*_%s.tif" % (out_dir, d)]  # Input files
+    args += [str(x) for x in out_dir.glob("*_%s.tif" % d)]
     print("Running: ", args)
+    # Windows specific str casting of WindowsPaths
+    args = list(map(str, args))
     subprocess.Popen(" ".join(args), shell=True).wait()
 
 
@@ -89,9 +103,11 @@ for t in tiles:
     args += ["-tr", "0.4", "0.4"]
     args += [srcfile, tmpfile]
     print("Running: ", args)
+    args = list(map(str, args))
     subprocess.run(args, check=True)
     # Calculate ndvi
-    args = ["gdal_calc.py"]
+    args = ["python"]
+    args += [gdal_calc_path]
     args += ["-A", tmpfile, "--A_band=4"]
     args += ["-B", tmpfile, "--B_band=1"]
     args += ["--creation-option", "compress=deflate"]
@@ -100,6 +116,8 @@ for t in tiles:
     args += ["--calc", "(A.astype(float)-B)/(A.astype(float)+B)"]
     args += ["--outfile", dstfile]
     print("Running: ", args)
+    # Windows specific str casting of WindowsPaths
+    args = list(map(str, args))
     subprocess.run(args, check=True)
     tmpfile.unlink()
 
@@ -111,8 +129,10 @@ args += ["-tap"]
 args += ["-tr", "0.4", "0.4"]
 args += ["-te", "440000", "6048000", "895000", "6404000"]
 args += [str(out_dir / "ndvi.vrt")]  # Output vrt
-args += [str(out_dir / "1km_*_ndvi.tif")]  # Input files
+args += [str(x) for x in out_dir.glob("1km_*_ndvi.tif")]
 print("Running: ", args)
+# Windows specific str casting of WindowsPaths
+args = list(map(str, args))
 subprocess.Popen(" ".join(args), shell=True).wait()
 
 
@@ -136,6 +156,8 @@ def process_derived(t):
         args += ["%s/%s.vrt" % (out_dir.resolve(), d)]
         args += [out_dir]
         print("Running: ", args)
+        # Windows specific str casting of WindowsPaths
+        args = list(map(str, args))
         subprocess.run(args, check=True)
 
 
@@ -153,8 +175,11 @@ for d in ("Amplitude", "Pulsewidth", "ndvi"):
         args += ["-tr", "0.4", "0.4"]
         args += ["-te", "440000", "6048000", "895000", "6404000"]
         args += ["%s/%s_%s.vrt" % (out_dir, d, m)]  # Output vrt
-        args += ["%s/*_%s_%s.tif" % (out_dir, d, m)]  # Input files
+        args += [str(x) for x in out_dir.glob("*_%s_%s.tif" % (d, m))]
+
         print("Running: ", args)
+        # Windows specific str casting of WindowsPaths
+        args = list(map(str, args))
         subprocess.Popen(" ".join(args), shell=True).wait()
 
 print("Run classification")
@@ -167,22 +192,24 @@ for t in tiles:
     if dstfile.exists():
         print("%s exists. Skipping" % dstfile)
         continue
-    args = ["surfclass", "classify", "randomforestndvi"]
+    args = ["surfclass", "classify", "genericmodel"]
     args += ["--bbox"] + [str(x) for x in bbox]
-    args += ["-f1", out_dir / "Amplitude_diffmean.vrt"]
-    args += ["-f2", out_dir / "Amplitude_mean.vrt"]
-    args += ["-f3", out_dir / "Amplitude_var.vrt"]
-    args += ["-f4", out_dir / "ndvi_diffmean.vrt"]
-    args += ["-f5", out_dir / "ndvi_mean.vrt"]
-    args += ["-f6", out_dir / "ndvi_var.vrt"]
-    args += ["-f7", out_dir / "pulsewidth_diffmean.vrt"]
-    args += ["-f8", out_dir / "pulsewidth_mean.vrt"]
-    args += ["-f9", out_dir / "pulsewidth_var.vrt"]
-    args += ["-f10", out_dir / "returnnumber.vrt"]
+    args += ["-f", out_dir / "Amplitude_diffmean.vrt"]
+    args += ["-f", out_dir / "Amplitude_mean.vrt"]
+    args += ["-f", out_dir / "Amplitude_var.vrt"]
+    args += ["-f", out_dir / "ndvi_diffmean.vrt"]
+    args += ["-f", out_dir / "ndvi_mean.vrt"]
+    args += ["-f", out_dir / "ndvi_var.vrt"]
+    args += ["-f", out_dir / "pulsewidth_diffmean.vrt"]
+    args += ["-f", out_dir / "pulsewidth_mean.vrt"]
+    args += ["-f", out_dir / "pulsewidth_var.vrt"]
+    args += ["-f", out_dir / "returnnumber.vrt"]
     args += ["--prob", probfile]
     args += [modelfile]
     args += [dstfile]
     print("Running: ", args)
+    # Windows specific str casting of WindowsPaths
+    args = list(map(str, args))
     subprocess.run(args, check=True)
 
 
@@ -193,8 +220,10 @@ args += ["-tap"]
 args += ["-tr", "0.4", "0.4"]
 args += ["-te", "440000", "6048000", "895000", "6404000"]
 args += [str(out_dir / "classification.vrt")]  # Output vrt
-args += [str(out_dir / "1km_*_classification.tif")]  # Input files
+args += [str(x) for x in out_dir.glob("1km_*_classification.tif")]
 print("Running: ", args)
+# Windows specific str casting of WindowsPaths
+args = list(map(str, args))
 subprocess.Popen(" ".join(args), shell=True).wait()
 # Probability
 args = ["gdalbuildvrt"]
@@ -203,8 +232,10 @@ args += ["-tap"]
 args += ["-tr", "0.4", "0.4"]
 args += ["-te", "440000", "6048000", "895000", "6404000"]
 args += [str(out_dir / "classification_prob.vrt")]  # Output vrt
-args += [str(out_dir / "1km_*_classification_prob.tif")]  # Input files
+args += [str(x) for x in out_dir.glob("1km_*_classification_prob.tif")]
 print("Running: ", args)
+# Windows specific str casting of WindowsPaths
+args = list(map(str, args))
 subprocess.Popen(" ".join(args), shell=True).wait()
 
 print("Denoise")
@@ -224,6 +255,8 @@ for t in tiles:
     args += ["--bbox"] + [str(x) for x in bbox_buffer]
     args += [srcfile, tmpfile]
     print("Running: ", args)
+    # Windows specific str casting of WindowsPaths
+    args = list(map(str, args))
     subprocess.run(args, check=True)
     # Crop away edges
     args = ["gdal_translate"]
@@ -233,6 +266,7 @@ for t in tiles:
     args += [tmpfile]
     args += [dstfile]
     print("Running: ", args)
+    args = list(map(str, args))
     subprocess.run(args, check=True)
     tmpfile.unlink()
 
@@ -244,8 +278,10 @@ args += ["-tap"]
 args += ["-tr", "0.4", "0.4"]
 args += ["-te", "440000", "6048000", "895000", "6404000"]
 args += [str(out_dir / "classification_denoised.vrt")]  # Output vrt
-args += [str(out_dir / "1km_*_classification_denoised.tif")]  # Input files
+args += [str(x) for x in out_dir.glob("1km_*_classification_denoised.tif")]
 print("Running: ", args)
+# Windows specific str casting of WindowsPaths
+args = list(map(str, args))
 subprocess.Popen(" ".join(args), shell=True).wait()
 
 print("Burn buildings and lakes")
@@ -272,6 +308,8 @@ for t in tiles:
         args += ["-spat"] + [str(x) for x in bbox]
         args += [tmpgeom, geodkdb, layername]
         print("Running: ", " ".join(map(str, args)))
+        # Windows specific str casting of WindowsPaths
+        args = list(map(str, args))
         subprocess.run(args, check=True)
         # Now use subset
         args = ["gdal_rasterize"]
@@ -280,6 +318,8 @@ for t in tiles:
         args += [tmpgeom]
         args += [tmpfile]
         print("Running: ", " ".join(map(str, args)))
+        # Windows specific str casting of WindowsPaths
+        args = list(map(str, args))
         subprocess.run(args, check=True)
         tmpgeom.unlink()
     shutil.copy(tmpfile, dstfile)
@@ -293,6 +333,8 @@ args += ["-tap"]
 args += ["-tr", "0.4", "0.4"]
 args += ["-te", "440000", "6048000", "895000", "6404000"]
 args += [str(out_dir / "classification_denoised_burn.vrt")]  # Output vrt
-args += [str(out_dir / "1km_*_classification_denoised_burn.tif")]  # Input files
+args += [str(x) for x in out_dir.glob("1km_*_classification_denoised_burn.tif")]
 print("Running: ", args)
+# Windows specific str casting of WindowsPaths
+args = list(map(str, args))
 subprocess.Popen(" ".join(args), shell=True).wait()
