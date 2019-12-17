@@ -75,12 +75,14 @@ class RandomForest:
 
         return model
 
-    def train(self, X, y, num_trees=200):
+    def train(self, X, y, num_trees=100, processors=-1):
         """Train/Fit a RandomForestClassifier using the observation matrix X and class vector y.
 
         Args:
             X (np.array): 2D Matrix of feature observations.
-            y (np.array): 1D vector of class labels.h
+            y (np.array): 1D vector of class labels.
+            num_tress (int): Number of tress used in the forest.
+            processors (int): Number of parallel jobs used to train, -1 means all processors.
 
         Returns:
             sklearn.ensemble.RandomForestClassifier: A trained RandomForestClassifier model.
@@ -107,7 +109,7 @@ class RandomForest:
         ), "Number of class observations does not match number of feature observations."
 
         rf = RandomForestClassifier(
-            n_estimators=num_trees, oob_score=False, verbose=0, n_jobs=-1
+            n_estimators=num_trees, oob_score=False, verbose=0, n_jobs=processors
         )
 
         # fit the model
@@ -119,12 +121,13 @@ class RandomForest:
         # return the trained model
         return rf_trained
 
-    def classify(self, X, prob=False):
+    def classify(self, X, prob=False, processors=None):
         """Classify X using the instantiated RandomForestClassifier model.
 
         Args:
             X (np.array): 2D Matrix of feature observations.
             prob (bool): If true returns tuple with classified vector and highest class probability vector
+            processors (int): Number of parallel jobs used to train. -1 means all processors, None means model default.
 
         Returns:
             np.array or tuple (np.array,np.array): classified vector or tuple of classified vector and probability vector
@@ -136,6 +139,9 @@ class RandomForest:
 
         # TODO: This might be double-work but the model attribute can have been changed
         model = self.validate_model(self.model)
+
+        if isinstance(processors, int):
+            model.n_jobs = processors
 
         # Test the X input is acceptable for the given model.
         assert (

@@ -27,6 +27,18 @@ def classify():
 @click.option("-f9", "--feature9", required=True, help="Pulse width Var n=5")
 @click.option("-f10", "--feature10", required=True, help="ReturnNumber")
 @click.option(
+    "-p",
+    "--processors",
+    type=int,
+    multiple=False,
+    required=False,
+    default=None,
+    help="Number of processors to use in parallel. -1 means using all processors, \
+        -2 means using all processors but one, 1 means using only 1 processor. Can't \
+        use more processors than there are available cores on the system. Is originally defined in model, \
+        if no number of --processors are defined, will classify with original model parameters",
+)
+@click.option(
     "--prob",
     default=None,
     type=click.Path(exists=False, file_okay=True, dir_okay=False),
@@ -59,6 +71,7 @@ def randomforestndvi(
     model,
     bbox,
     prob,
+    processors,
     output,
 ):
     r"""
@@ -80,12 +93,13 @@ def randomforestndvi(
                                                                      -f10 1km_6171_727_ReturnNumber.tif
                                                                      A5_NDVI5_P5_R_NT400_1km_6171_727_40cm_predicted.sav
                                                                      --prob ./classified_prob.tif
+                                                                     -p -1
                                                                      genericmodel.sav
                                                                      ./classified.tif
     """
     # Log inputs
     logger.debug(
-        "Classification with randomforestndvi started with arguments: %s, %s, %s, %s, %s, %s, %s,%s,%s, %s, %s, %s, %s, %s",
+        "Classification with randomforestndvi started with arguments: %s, %s, %s, %s, %s, %s, %s,%s,%s, %s, %s, %s, %s, %s,%s",
         feature1,
         feature2,
         feature3,
@@ -99,6 +113,7 @@ def randomforestndvi(
         model,
         bbox,
         prob,
+        processors,
         output,
     )
 
@@ -126,9 +141,11 @@ def randomforestndvi(
 
     class_prob = None
     if prob is not None:
-        class_prediction, class_prob = classifier.classify(X, prob=True)
+        class_prediction, class_prob = classifier.classify(
+            X, prob=True, processors=processors
+        )
     else:
-        class_prediction = classifier.classify(X)
+        class_prediction = classifier.classify(X, processors=processors)
 
     logger.debug("Finished classification")
 
@@ -163,6 +180,18 @@ def randomforestndvi(
     help="Feature raster file. Multiple allowed. NOTE: Order is important!!!",
 )
 @click.option(
+    "-p",
+    "--processors",
+    type=int,
+    multiple=False,
+    required=False,
+    default=None,
+    help="Number of processors to use in parallel. -1 means using all processors, \
+        -2 means using all processors but one, 1 means using only 1 processor. Can't \
+        use more processors than there are available cores on the system. Is originally defined in model, \
+        if no number of --processors are defined, will classify with original model parameters",
+)
+@click.option(
     "--prob",
     default=None,
     type=click.Path(exists=False, file_okay=True, dir_okay=False),
@@ -181,7 +210,7 @@ def randomforestndvi(
     # Allow just one output directory
     nargs=1,
 )
-def genericmodel(rasterfiles, model, bbox, prob, output):
+def genericmodel(rasterfiles, model, bbox, processors, prob, output):
     r"""
     Generic Model
 
@@ -207,11 +236,12 @@ def genericmodel(rasterfiles, model, bbox, prob, output):
     """
     # Log inputs
     logger.debug(
-        "Classification with model %s started with arguments: %s, %s, %s",
+        "Classification with model %s started with arguments: %s, %s, %s, %s",
         model,
         bbox,
-        output,
+        processors,
         prob,
+        output,
     )
     # Print feature order. This is important.
     click.echo("Classifying using %s with features:" % model)
@@ -231,9 +261,11 @@ def genericmodel(rasterfiles, model, bbox, prob, output):
 
     class_prob = None
     if prob is not None:
-        class_prediction, class_prob = classifier.classify(X, prob=True)
+        class_prediction, class_prob = classifier.classify(
+            X, prob=True, processors=processors
+        )
     else:
-        class_prediction = classifier.classify(X)
+        class_prediction = classifier.classify(X, processors=processors)
 
     logger.debug("Finished classification")
 
