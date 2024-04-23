@@ -7,7 +7,7 @@ dependencies:
   - click-plugins>=1.0.0
   - gdal=3.*
   - python-pdal=2.*
-  - scikit-learn=0.21.*
+  - scikit-learn
   - scipy
   - scikit-image
   - black
